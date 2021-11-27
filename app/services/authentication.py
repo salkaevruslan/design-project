@@ -28,7 +28,7 @@ def get_password_hash(password):
 
 
 def authenticate_user(db: Session, username: str, password: str):
-    user = get_user(db, username)
+    user = get_user_from_db(db, username)
     if not user or not verify_password(password, user.password_hash):
         return False
     return user
@@ -58,13 +58,13 @@ async def get_current_user(db: Session = Depends(get_database), token: str = Dep
             raise credentials_exception
     except Exception:
         raise credentials_exception
-    user = get_user(db, username)
+    user = get_user_from_db(db, username)
     if user is None:
         raise credentials_exception
-    return User(username=user.username, email=user.email)
+    return User(id=user.id, username=user.username, email=user.email)
 
 
-def get_user(db, username: str):
+def get_user_from_db(db, username: str):
     return db.query(UserDB).filter(UserDB.username == username).first()
 
 
