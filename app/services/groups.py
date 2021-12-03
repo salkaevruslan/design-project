@@ -8,14 +8,6 @@ from app.models.schemas.groups import InviteCreationRequest
 from app.services.authentication import get_user_from_db
 
 
-def get_user_groups(db, user: User):
-    groups = get_user_groups_from_db(db, user.username)
-    result = []
-    for group in groups:
-        result.append(Group(id=group.id, name=group.name, admin_id=group.admin_id))
-    return result
-
-
 def create_group(db, user: User, request: GroupCreationRequest):
     new_db_group = GroupDB(name=request.name, admin_id=user.id)
     db.add(new_db_group)
@@ -36,6 +28,14 @@ def get_group(db, group_id: int):
             detail="Group not found"
         )
     return group
+
+
+def get_user_groups(db, user: User):
+    groups = get_user_groups_from_db(db, user.username)
+    result = []
+    for group in groups:
+        result.append(Group(id=group.id, name=group.name, admin_name=group.admin_id))
+    return result
 
 
 def get_group_members(db, current_user: User, group_id: int):
@@ -85,6 +85,66 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
                   datetime=new_invite_db.datetime)
 
 
+def get_my_invites(db, current_user: User):
+    response = get_user_invites_from_db(db, current_user.id)
+    result = []
+    for elem in response:
+        group = elem['group']
+        admin = elem['admin']
+        result.append({
+            'group': Group(id=group.id, name=group.name, admin_id=group.admin_id),
+            'admin': User(id=admin.id, username=admin.username, email=admin.email),
+            'datetime': elem['datetime']
+        })
+    return result
+
+
+def get_list_of_invites_to_group(db, current_user: User, group_id: int):
+    group = get_group(db, group_id)
+    if group.admin_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only admin can view group invitation"
+        )
+    response = get_group_invites_from_db(db, group_id)
+    result = []
+    for elem in response:
+        user = elem['user']
+        result.append({
+            'user': User(id=user.id, username=user.username, email=user.email),
+            'datetime': elem['datetime']
+        })
+    return result
+
+
+def get_user_invites_from_db(db, user_id: int):
+    query = db.query(InviteDB, GroupDB, UserDB)
+    query = query.filter(InviteDB.user_id == user_id)
+    query = query.join(GroupDB, InviteDB.group_id == GroupDB.id)
+    query = query.join(UserDB, GroupDB.admin_id == UserDB.id)
+    result = []
+    for invite, group, user in query.all():
+        result.append({
+            'group': group,
+            'admin': user,
+            'datetime': invite.datetime
+        })
+    return result
+
+
+def get_group_invites_from_db(db, group_id: int):
+    query = db.query(InviteDB, UserDB)
+    query = query.filter(InviteDB.group_id == group_id)
+    query = query.join(UserDB, InviteDB.user_id == UserDB.id)
+    result = []
+    for invite, user in query.all():
+        result.append({
+            'user': user,
+            'datetime': invite.datetime
+        })
+    return result
+
+
 def get_group_from_db(db, group_id: int):
     return db.query(GroupDB).filter(GroupDB.id == group_id).first()
 
@@ -107,5 +167,8 @@ def get_users_in_group_from_db(db, group_id: int):
     query = query.join(UserDB, UserInGroupDB.user_id == UserDB.id)
     result = []
     for group, user_in_group, user in query.all():
-        result.append({'user': user, 'member_since': user_in_group.member_since_datetime})
+        result.append({
+            'user': user,
+            'member_since': user_in_group.member_since_datetime
+        })
     return result
