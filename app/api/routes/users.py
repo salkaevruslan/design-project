@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.db.db import get_database
@@ -14,6 +14,6 @@ async def get_user(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/add")
-def add_user(user: UserCreationRequest, db: Session = Depends(get_database)):
+@router.post("/add", status_code=status.HTTP_201_CREATED)
+async def add_user(user: UserCreationRequest, db: Session = Depends(get_database)):
     return create_user(db=db, user=user)

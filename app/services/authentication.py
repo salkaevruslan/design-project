@@ -31,7 +31,7 @@ def authenticate_user(db: Session, username: str, password: str):
     user = get_user_from_db(db, username)
     if not user or not verify_password(password, user.password_hash):
         return False
-    return user
+    return User(id=user.id, username=user.username, email=user.email)
 
 
 async def generate_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -75,4 +75,4 @@ def create_user(db: Session, user: UserCreationRequest):
     db.add(new_db_user)
     db.commit()
     db.refresh(new_db_user)
-    return new_db_user
+    return User(id=new_db_user.id, username=new_db_user.username, email=new_db_user.email)
