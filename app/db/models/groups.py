@@ -23,6 +23,8 @@ class UserInGroupDB(Base):
 class InviteDB(Base):
     __tablename__ = 'invites'
 
-    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
-    group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    group_id = Column(Integer, ForeignKey('groups.id'))
     datetime = Column(DateTime, default=datetime.datetime.utcnow())
+    UniqueConstraint(user_id, group_id)

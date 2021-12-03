@@ -80,7 +80,8 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
     db.add(new_invite_db)
     db.commit()
     db.refresh(new_invite_db)
-    return Invite(group_id=new_invite_db.group_id,
+    return Invite(id=new_invite_db.id,
+                  group_id=new_invite_db.group_id,
                   invited_user_id=new_invite_db.user_id,
                   datetime=new_invite_db.datetime)
 
@@ -92,6 +93,7 @@ def get_my_invites(db, current_user: User):
         group = elem['group']
         admin = elem['admin']
         result.append({
+            'invite_id': elem['invite_id'],
             'group': Group(id=group.id, name=group.name, admin_id=group.admin_id),
             'admin': User(id=admin.id, username=admin.username, email=admin.email),
             'datetime': elem['datetime']
@@ -111,6 +113,7 @@ def get_list_of_invites_to_group(db, current_user: User, group_id: int):
     for elem in response:
         user = elem['user']
         result.append({
+            'invite_id': elem['invite_id'],
             'user': User(id=user.id, username=user.username, email=user.email),
             'datetime': elem['datetime']
         })
@@ -125,6 +128,7 @@ def get_user_invites_from_db(db, user_id: int):
     result = []
     for invite, group, user in query.all():
         result.append({
+            'invite_id': invite.id,
             'group': group,
             'admin': user,
             'datetime': invite.datetime
@@ -139,6 +143,7 @@ def get_group_invites_from_db(db, group_id: int):
     result = []
     for invite, user in query.all():
         result.append({
+            'invite_id': invite.id,
             'user': user,
             'datetime': invite.datetime
         })
