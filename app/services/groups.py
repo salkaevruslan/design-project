@@ -28,16 +28,33 @@ def create_group(db, user: User, request: GroupCreationRequest):
     return Group(id=new_db_group.id, name=new_db_group.name, admin_id=new_db_group.admin_id)
 
 
-def get_group_members(db, current_user: User, group_id: int):
-    members = get_users_in_group_from_db(db, group_id)
-    if not any(current_user.id == member.id for member in members):
+def get_group(db, group_id: int):
+    group = get_group_from_db(db, group_id)
+    if not group:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is already a member of this group"
+            detail="Group not found"
+        )
+    return group
+
+
+def get_group_members(db, current_user: User, group_id: int):
+    get_group(db, group_id)
+    response = get_users_in_group_from_db(db, group_id)
+    if not any(current_user.id == elem['user'].id for elem in response):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not a member of this group"
         )
     result = []
-    for member in members:
-        result.append(User(id=member.id, username=member.username, email=member.email))
+    for elem in response:
+        member = elem['user']
+        result.append(
+            {
+                'user': User(id=member.id, username=member.username, email=member.email),
+                'member_since': elem['member_since']
+            }
+        )
     return result
 
 
@@ -48,12 +65,7 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invited user not found"
         )
-    group = get_group_from_db(db, request.group_id)
-    if not group:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Group not found"
-        )
+    group = get_group(db, request.group_id)
     if group.admin_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -68,8 +80,7 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
     db.add(new_invite_db)
     db.commit()
     db.refresh(new_invite_db)
-    return Invite(id=new_invite_db.id,
-                  group_id=new_invite_db.group_id,
+    return Invite(group_id=new_invite_db.group_id,
                   invited_user_id=new_invite_db.user_id,
                   datetime=new_invite_db.datetime)
 
@@ -96,5 +107,5 @@ def get_users_in_group_from_db(db, group_id: int):
     query = query.join(UserDB, UserInGroupDB.user_id == UserDB.id)
     result = []
     for group, user_in_group, user in query.all():
-        result.append(user)
+        result.append({'user': user, 'member_since': user_in_group.member_since_datetime})
     return result

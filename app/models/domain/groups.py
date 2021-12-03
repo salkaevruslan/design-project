@@ -9,7 +9,6 @@ class Group(BaseModel):
 
 
 class Invite(BaseModel):
-    id: int
     group_id: int
     invited_user_id: int
     datetime: datetime.datetime
