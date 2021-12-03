@@ -1,7 +1,9 @@
-from sqlalchemy import Integer, Column, ForeignKey, String, DateTime, UniqueConstraint
+from sqlalchemy import Integer, Column, ForeignKey, String, DateTime, Enum
 
 from app.db.db import Base
 import datetime
+
+from app.models.schemas.groups import InviteStatus
 
 
 class GroupDB(Base):
@@ -27,4 +29,4 @@ class InviteDB(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     group_id = Column(Integer, ForeignKey('groups.id'))
     datetime = Column(DateTime, default=datetime.datetime.utcnow())
-    UniqueConstraint(user_id, group_id)
+    status = Column(Enum(InviteStatus), default=InviteStatus.SENT)

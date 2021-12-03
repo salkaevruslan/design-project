@@ -3,7 +3,7 @@ from app.db.models.groups import UserInGroupDB, GroupDB, InviteDB
 from app.db.models.users import UserDB
 from app.models.domain.groups import Group, Invite
 from app.models.domain.users import User
-from app.models.schemas.groups import GroupCreationRequest
+from app.models.schemas.groups import GroupCreationRequest, InviteStatus
 from app.models.schemas.groups import InviteCreationRequest
 from app.services.authentication import get_user_from_db
 
@@ -34,7 +34,7 @@ def get_user_groups(db, user: User):
     groups = get_user_groups_from_db(db, user.username)
     result = []
     for group in groups:
-        result.append(Group(id=group.id, name=group.name, admin_name=group.admin_id))
+        result.append(Group(id=group.id, name=group.name, admin_id=group.admin_id))
     return result
 
 
@@ -44,7 +44,7 @@ def get_group_members(db, current_user: User, group_id: int):
     if not any(current_user.id == elem['user'].id for elem in response):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is not a member of this group"
+            detail="Yau are not a member of this group"
         )
     result = []
     for elem in response:
@@ -76,6 +76,11 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already a member of this group"
         )
+    if get_invite_by_params_db(db, request.group_id, invited_user.id, InviteStatus.SENT):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite already sent"
+        )
     new_invite_db = InviteDB(user_id=invited_user.id, group_id=request.group_id)
     db.add(new_invite_db)
     db.commit()
@@ -83,7 +88,59 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
     return Invite(id=new_invite_db.id,
                   group_id=new_invite_db.group_id,
                   invited_user_id=new_invite_db.user_id,
-                  datetime=new_invite_db.datetime)
+                  datetime=new_invite_db.datetime,
+                  status=new_invite_db.status)
+
+
+def get_invite(db, invite_id: int):
+    invite = get_invite_by_id_db(db, invite_id)
+    if not invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite not found"
+        )
+    return invite
+
+
+def cancel_invite(db, current_user: User, invite_id: int):
+    invite = get_invite(db, invite_id)
+    group = get_group(db, invite.group_id)
+    if group.admin_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only admin can modify invites to group"
+        )
+    if invite.status != InviteStatus.SENT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"You cannot cancel invite with status: {invite.status}"
+        )
+    db.delete(invite)
+    db.commit()
+
+
+def process_invite(db, current_user: User, invite_id: int, is_accept: bool):
+    invite = get_invite(db, invite_id)
+    if invite.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"You cannot {'accept' if is_accept else 'decline'} this invite"
+        )
+    if invite.status != InviteStatus.SENT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"You cannot {'accept' if is_accept else 'decline'} invite with status: {invite.status}"
+        )
+    invite.status = InviteStatus.ACCEPTED if is_accept else InviteStatus.DECLINED
+    if is_accept:
+        user_in_group = UserInGroupDB(user_id=current_user.id, group_id=invite.group_id)
+        db.add(user_in_group)
+        db.commit()
+        db.refresh(invite)
+        db.refresh(user_in_group)
+    else:
+        db.commit()
+        db.refresh(invite)
 
 
 def get_my_invites(db, current_user: User):
@@ -92,11 +149,13 @@ def get_my_invites(db, current_user: User):
     for elem in response:
         group = elem['group']
         admin = elem['admin']
+        invite = elem['invite']
         result.append({
-            'invite_id': elem['invite_id'],
+            'invite_id': invite.id,
+            'datetime': invite.datetime,
+            'status': invite.status,
             'group': Group(id=group.id, name=group.name, admin_id=group.admin_id),
             'admin': User(id=admin.id, username=admin.username, email=admin.email),
-            'datetime': elem['datetime']
         })
     return result
 
@@ -105,19 +164,33 @@ def get_list_of_invites_to_group(db, current_user: User, group_id: int):
     group = get_group(db, group_id)
     if group.admin_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Only admin can view group invitation"
         )
     response = get_group_invites_from_db(db, group_id)
     result = []
     for elem in response:
         user = elem['user']
+        invite = elem['invite']
         result.append({
-            'invite_id': elem['invite_id'],
-            'user': User(id=user.id, username=user.username, email=user.email),
-            'datetime': elem['datetime']
+            'invite_id': invite.id,
+            'datetime': invite.datetime,
+            'status': invite.status,
+            'user': User(id=user.id, username=user.username, email=user.email)
         })
     return result
+
+
+def get_invite_by_params_db(db, group_id: int, user_id: int, invite_status: InviteStatus):
+    query = db.query(InviteDB)
+    query = query.filter(InviteDB.user_id == user_id)
+    query = query.filter(InviteDB.group_id == group_id)
+    query = query.filter(InviteDB.status == invite_status)
+    return query.all()
+
+
+def get_invite_by_id_db(db, invite_id: int):
+    return db.query(InviteDB).filter(InviteDB.id == invite_id).first()
 
 
 def get_user_invites_from_db(db, user_id: int):
@@ -128,10 +201,9 @@ def get_user_invites_from_db(db, user_id: int):
     result = []
     for invite, group, user in query.all():
         result.append({
-            'invite_id': invite.id,
+            'invite': invite,
             'group': group,
             'admin': user,
-            'datetime': invite.datetime
         })
     return result
 
@@ -143,9 +215,8 @@ def get_group_invites_from_db(db, group_id: int):
     result = []
     for invite, user in query.all():
         result.append({
-            'invite_id': invite.id,
+            'invite': invite,
             'user': user,
-            'datetime': invite.datetime
         })
     return result
 
