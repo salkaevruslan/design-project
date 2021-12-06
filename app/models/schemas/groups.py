@@ -15,3 +15,8 @@ class InviteStatus(enum.Enum):
 class InviteCreationRequest(BaseModel):
     group_id: int
     invited_user_name: str
+
+
+class AdminChangeRequest(BaseModel):
+    group_id: int
+    user_name: str
