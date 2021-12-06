@@ -12,11 +12,6 @@ class InviteStatus(enum.Enum):
     DECLINED = "DECLINED"
 
 
-class InviteCreationRequest(BaseModel):
-    group_id: int
-    invited_user_name: str
-
-
-class AdminChangeRequest(BaseModel):
+class GroupAndUserRequest(BaseModel):
     group_id: int
     user_name: str

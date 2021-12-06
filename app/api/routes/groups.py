@@ -47,7 +47,7 @@ async def get_my_invites_to_groups(current_user: User = Depends(get_current_user
     return groups_service.get_my_invites_to_groups(db, current_user)
 
 
-@router.post("/leave")
+@router.delete("/leave")
 async def leave_from_group(group_id: int, current_user: User = Depends(get_current_user),
                            db: Session = Depends(get_database)):
     groups_service.leave_from_group(db, current_user, group_id)
