@@ -7,9 +7,9 @@ class GroupCreationRequest(BaseModel):
 
 
 class InviteStatus(enum.Enum):
-    SENT = 1,
-    ACCEPTED = 2,
-    DECLINED = 3
+    SENT = "SENT",
+    ACCEPTED = "ACCEPTED",
+    DECLINED = "DECLINED"
 
 
 class InviteCreationRequest(BaseModel):

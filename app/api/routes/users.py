@@ -15,5 +15,5 @@ async def get_user(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/add", status_code=status.HTTP_201_CREATED)
-async def add_user(user: UserCreationRequest, db: Session = Depends(get_database)):
-    return create_user(db=db, user=user)
+async def add_user(request: UserCreationRequest, db: Session = Depends(get_database)):
+    return create_user(db, request)

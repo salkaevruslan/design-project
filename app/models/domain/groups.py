@@ -1,11 +1,13 @@
 from pydantic import BaseModel
 import datetime
 
+from app.models.domain.users import User
+
 
 class Group(BaseModel):
     id: int
     name: str
-    admin_id: int
+    admin: User
 
 
 class Invite(BaseModel):

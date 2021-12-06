@@ -1,27 +1,23 @@
 from fastapi import HTTPException, status
-from app.db.models.groups import UserInGroupDB, GroupDB, InviteDB
-from app.db.models.users import UserDB
+from app.db.repository.groups import get_user_groups_from_db, get_users_in_group_from_db, get_group_by_id_db, \
+    create_group_db, create_user_in_group_db
+from app.db.repository.invites import get_user_invites_from_db, get_group_invites_from_db, get_invite_by_id_db, \
+    get_invite_by_params_db, create_invite_db
+from app.db.repository.users import get_user_by_name_db, get_user_by_id_db
 from app.models.domain.groups import Group, Invite
 from app.models.domain.users import User
 from app.models.schemas.groups import GroupCreationRequest, InviteStatus
 from app.models.schemas.groups import InviteCreationRequest
-from app.services.authentication import get_user_from_db
 
 
 def create_group(db, user: User, request: GroupCreationRequest):
-    new_db_group = GroupDB(name=request.name, admin_id=user.id)
-    db.add(new_db_group)
-    db.commit()
-    db.refresh(new_db_group)
-    admin_in_group = UserInGroupDB(user_id=user.id, group_id=new_db_group.id)
-    db.add(admin_in_group)
-    db.commit()
-    db.refresh(admin_in_group)
-    return Group(id=new_db_group.id, name=new_db_group.name, admin_id=new_db_group.admin_id)
+    new_db_group = create_group_db(db, user.id, request.name)
+    create_user_in_group_db(db, user.id, new_db_group.id)
+    return Group(id=new_db_group.id, name=new_db_group.name, admin=user)
 
 
 def get_group(db, group_id: int):
-    group = get_group_from_db(db, group_id)
+    group = get_group_by_id_db(db, group_id)
     if not group:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -34,7 +30,14 @@ def get_user_groups(db, user: User):
     groups = get_user_groups_from_db(db, user.username)
     result = []
     for group in groups:
-        result.append(Group(id=group.id, name=group.name, admin_id=group.admin_id))
+        admin = get_user_by_id_db(db, group.admin_id)
+        result.append(Group(id=group.id,
+                            name=group.name,
+                            admin=User(id=admin.id,
+                                       username=admin.username,
+                                       email=admin.email)
+                            )
+                      )
     return result
 
 
@@ -59,7 +62,7 @@ def get_group_members(db, current_user: User, group_id: int):
 
 
 def invite_user_to_group(db, current_user: User, request: InviteCreationRequest):
-    invited_user = get_user_from_db(db, request.invited_user_name)
+    invited_user = get_user_by_name_db(db, request.invited_user_name)
     if not invited_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -81,10 +84,7 @@ def invite_user_to_group(db, current_user: User, request: InviteCreationRequest)
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invite already sent"
         )
-    new_invite_db = InviteDB(user_id=invited_user.id, group_id=request.group_id)
-    db.add(new_invite_db)
-    db.commit()
-    db.refresh(new_invite_db)
+    new_invite_db = create_invite_db(db, invited_user.id, request.group_id)
     return Invite(id=new_invite_db.id,
                   group_id=new_invite_db.group_id,
                   invited_user_id=new_invite_db.user_id,
@@ -133,14 +133,9 @@ def process_invite(db, current_user: User, invite_id: int, is_accept: bool):
         )
     invite.status = InviteStatus.ACCEPTED if is_accept else InviteStatus.DECLINED
     if is_accept:
-        user_in_group = UserInGroupDB(user_id=current_user.id, group_id=invite.group_id)
-        db.add(user_in_group)
-        db.commit()
-        db.refresh(invite)
-        db.refresh(user_in_group)
-    else:
-        db.commit()
-        db.refresh(invite)
+        create_user_in_group_db(db, invite.user_id, invite.group_id)
+    db.commit()
+    db.refresh(invite)
 
 
 def get_my_invites(db, current_user: User):
@@ -154,8 +149,12 @@ def get_my_invites(db, current_user: User):
             'invite_id': invite.id,
             'datetime': invite.datetime,
             'status': invite.status,
-            'group': Group(id=group.id, name=group.name, admin_id=group.admin_id),
-            'admin': User(id=admin.id, username=admin.username, email=admin.email),
+            'group': Group(id=group.id,
+                           name=group.name,
+                           admin=User(id=admin.id,
+                                      username=admin.username,
+                                      email=admin.email)
+                           ),
         })
     return result
 
@@ -177,74 +176,5 @@ def get_list_of_invites_to_group(db, current_user: User, group_id: int):
             'datetime': invite.datetime,
             'status': invite.status,
             'user': User(id=user.id, username=user.username, email=user.email)
-        })
-    return result
-
-
-def get_invite_by_params_db(db, group_id: int, user_id: int, invite_status: InviteStatus):
-    query = db.query(InviteDB)
-    query = query.filter(InviteDB.user_id == user_id)
-    query = query.filter(InviteDB.group_id == group_id)
-    query = query.filter(InviteDB.status == invite_status)
-    return query.all()
-
-
-def get_invite_by_id_db(db, invite_id: int):
-    return db.query(InviteDB).filter(InviteDB.id == invite_id).first()
-
-
-def get_user_invites_from_db(db, user_id: int):
-    query = db.query(InviteDB, GroupDB, UserDB)
-    query = query.filter(InviteDB.user_id == user_id)
-    query = query.join(GroupDB, InviteDB.group_id == GroupDB.id)
-    query = query.join(UserDB, GroupDB.admin_id == UserDB.id)
-    result = []
-    for invite, group, user in query.all():
-        result.append({
-            'invite': invite,
-            'group': group,
-            'admin': user,
-        })
-    return result
-
-
-def get_group_invites_from_db(db, group_id: int):
-    query = db.query(InviteDB, UserDB)
-    query = query.filter(InviteDB.group_id == group_id)
-    query = query.join(UserDB, InviteDB.user_id == UserDB.id)
-    result = []
-    for invite, user in query.all():
-        result.append({
-            'invite': invite,
-            'user': user,
-        })
-    return result
-
-
-def get_group_from_db(db, group_id: int):
-    return db.query(GroupDB).filter(GroupDB.id == group_id).first()
-
-
-def get_user_groups_from_db(db, username: str):
-    query = db.query(UserDB, UserInGroupDB, GroupDB)
-    query = query.filter(UserDB.username == username)
-    query = query.join(UserInGroupDB, UserInGroupDB.user_id == UserDB.id)
-    query = query.join(GroupDB, UserInGroupDB.group_id == GroupDB.id)
-    result = []
-    for user, user_in_group, group in query.all():
-        result.append(group)
-    return result
-
-
-def get_users_in_group_from_db(db, group_id: int):
-    query = db.query(GroupDB, UserInGroupDB, UserDB)
-    query = query.filter(GroupDB.id == group_id)
-    query = query.join(UserInGroupDB, UserInGroupDB.group_id == GroupDB.id)
-    query = query.join(UserDB, UserInGroupDB.user_id == UserDB.id)
-    result = []
-    for group, user_in_group, user in query.all():
-        result.append({
-            'user': user,
-            'member_since': user_in_group.member_since_datetime
         })
     return result

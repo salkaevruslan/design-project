@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.db.db import get_database
-from app.db.models.users import UserDB
+from app.db.repository.users import create_user_db, get_user_by_name_db
 from app.models.domain.users import User
 from app.models.schemas.users import UserCreationRequest
 
@@ -28,7 +28,7 @@ def get_password_hash(password):
 
 
 def authenticate_user(db: Session, username: str, password: str):
-    user = get_user_from_db(db, username)
+    user = get_user_by_name_db(db, username)
     if not user or not verify_password(password, user.password_hash):
         return False
     return User(id=user.id, username=user.username, email=user.email)
@@ -58,21 +58,13 @@ async def get_current_user(db: Session = Depends(get_database), token: str = Dep
             raise credentials_exception
     except Exception:
         raise credentials_exception
-    user = get_user_from_db(db, username)
+    user = get_user_by_name_db(db, username)
     if user is None:
         raise credentials_exception
     return User(id=user.id, username=user.username, email=user.email)
 
 
-def get_user_from_db(db, username: str):
-    return db.query(UserDB).filter(UserDB.username == username).first()
-
-
-def create_user(db: Session, user: UserCreationRequest):
-    new_db_user = UserDB(username=user.username,
-                         email=user.email,
-                         password_hash=get_password_hash(user.password))
-    db.add(new_db_user)
-    db.commit()
-    db.refresh(new_db_user)
+def create_user(db, request: UserCreationRequest):
+    password_hash = get_password_hash(request.password)
+    new_db_user = create_user_db(db, request, password_hash)
     return User(id=new_db_user.id, username=new_db_user.username, email=new_db_user.email)
