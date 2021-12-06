@@ -24,6 +24,16 @@ def get_group(db, group_id: int):
     return group
 
 
+def get_invite(db, invite_id: int):
+    invite = get_invite_by_id_db(db, invite_id)
+    if not invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite not found"
+        )
+    return invite
+
+
 def get_user_groups(db, user: User):
     groups = get_user_groups_from_db(db, user.username)
     result = []
@@ -59,17 +69,7 @@ def get_group_members(db, current_user: User, group_id: int):
     return result
 
 
-def get_invite(db, invite_id: int):
-    invite = get_invite_by_id_db(db, invite_id)
-    if not invite:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invite not found"
-        )
-    return invite
-
-
-def process_invite(db, current_user: User, invite_id: int, is_accept: bool):
+def process_invite_to_group(db, current_user: User, invite_id: int, is_accept: bool):
     invite = get_invite(db, invite_id)
     if invite.user_id != current_user.id:
         raise HTTPException(
@@ -88,7 +88,7 @@ def process_invite(db, current_user: User, invite_id: int, is_accept: bool):
     db.refresh(invite)
 
 
-def get_my_invites(db, current_user: User):
+def get_my_invites_to_groups(db, current_user: User):
     response = get_user_invites_from_db(db, current_user.id)
     result = []
     for elem in response:
@@ -109,7 +109,7 @@ def get_my_invites(db, current_user: User):
     return result
 
 
-def leave_group(db, current_user: User, group_id: int):
+def leave_from_group(db, current_user: User, group_id: int):
     group = get_group(db, group_id)
     response = get_users_in_group_from_db(db, group_id)
     if not any(current_user.id == elem['user'].id for elem in response):

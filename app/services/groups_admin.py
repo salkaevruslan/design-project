@@ -19,7 +19,7 @@ def get_group_as_admin(db, current_user: User, group_id: int):
     return group
 
 
-def get_list_of_invites_to_group(db, current_user: User, group_id: int):
+def get_invites_to_group(db, current_user: User, group_id: int):
     get_group_as_admin(db, current_user, group_id)
     response = get_group_invites_from_db(db, group_id)
     result = []
@@ -35,7 +35,7 @@ def get_list_of_invites_to_group(db, current_user: User, group_id: int):
     return result
 
 
-def cancel_invite(db, current_user: User, invite_id: int):
+def cancel_invite_to_group(db, current_user: User, invite_id: int):
     invite = get_invite(db, invite_id)
     group = get_group_as_admin(db, current_user, invite.group_id)
     if group.admin_id != current_user.id:

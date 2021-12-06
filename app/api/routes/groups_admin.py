@@ -11,22 +11,22 @@ router = APIRouter()
 
 
 @router.post("/invite", status_code=status.HTTP_201_CREATED)
-async def invite_to_group(request: InviteCreationRequest, current_user: User = Depends(get_current_user),
-                          db: Session = Depends(get_database)):
+async def invite_user_to_group(request: InviteCreationRequest, current_user: User = Depends(get_current_user),
+                               db: Session = Depends(get_database)):
     return admin_service.invite_user_to_group(db, current_user, request)
 
 
 @router.delete("/invite/cancel")
 async def cancel_invite_to_group(invite_id: int, current_user: User = Depends(get_current_user),
                                  db: Session = Depends(get_database)):
-    admin_service.cancel_invite(db, current_user, invite_id)
+    admin_service.cancel_invite_to_group(db, current_user, invite_id)
     return "Invite cancelled"
 
 
 @router.get("/group-invites")
-async def invites_to_group(group_id: int, current_user: User = Depends(get_current_user),
-                           db: Session = Depends(get_database)):
-    return admin_service.get_list_of_invites_to_group(db, current_user, group_id)
+async def get_invites_to_group(group_id: int, current_user: User = Depends(get_current_user),
+                               db: Session = Depends(get_database)):
+    return admin_service.get_invites_to_group(db, current_user, group_id)
 
 
 @router.post("/change-admin")
