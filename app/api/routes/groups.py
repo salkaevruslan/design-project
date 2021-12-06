@@ -6,7 +6,7 @@ from app.models.domain.users import User
 from app.models.schemas.groups import GroupCreationRequest
 from app.services.authentication import get_current_user
 from app.services.groups import get_user_groups, create_group, get_group_members, \
-    get_my_invites, process_invite
+    get_my_invites, process_invite, leave_group
 
 router = APIRouter()
 
@@ -46,3 +46,10 @@ async def accept_invite_to_group(invite_id: int, current_user: User = Depends(ge
 async def my_invites_to_groups(current_user: User = Depends(get_current_user),
                                db: Session = Depends(get_database)):
     return get_my_invites(db, current_user)
+
+
+@router.post("/leave")
+async def leave_from_group(group_id: int, current_user: User = Depends(get_current_user),
+                           db: Session = Depends(get_database)):
+    leave_group(db, current_user, group_id)
+    return "Ypu leaved from group"

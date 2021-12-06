@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from app.db.repository.groups import get_user_groups_from_db, get_users_in_group_from_db, get_group_by_id_db, \
-    create_group_db, create_user_in_group_db
+    create_group_db, create_user_in_group_db, delete_user_in_group_db
 from app.db.repository.invites import get_user_invites_from_db, get_invite_by_id_db
 from app.db.repository.users import get_user_by_id_db
 from app.models.domain.groups import Group
@@ -45,7 +45,7 @@ def get_group_members(db, current_user: User, group_id: int):
     if not any(current_user.id == elem['user'].id for elem in response):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Yau are not a member of this group"
+            detail="You are not a member of this group"
         )
     result = []
     for elem in response:
@@ -107,3 +107,19 @@ def get_my_invites(db, current_user: User):
                            ),
         })
     return result
+
+
+def leave_group(db, current_user: User, group_id: int):
+    group = get_group(db, group_id)
+    response = get_users_in_group_from_db(db, group_id)
+    if not any(current_user.id == elem['user'].id for elem in response):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are not a member of this group"
+        )
+    if group.admin_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You need to make other member admin, before leaving this group"
+        )
+    delete_user_in_group_db(db, current_user.id, group_id)
