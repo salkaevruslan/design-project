@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from app.db.repository.groups import get_user_groups_from_db, get_users_in_group_from_db, get_group_by_id_db, \
-    create_group_db, create_user_in_group_db, delete_user_in_group_db
+    create_group_db, create_user_in_group_db, delete_user_in_group_db, find_user_in_group_db
 from app.db.repository.invites import get_user_invites_from_db, get_invite_by_id_db
 from app.db.repository.users import get_user_by_id_db
 from app.models.domain.groups import Group
@@ -51,12 +51,12 @@ def get_user_groups(db, user: User):
 
 def get_group_members(db, current_user: User, group_id: int):
     get_group(db, group_id)
-    response = get_users_in_group_from_db(db, group_id)
-    if not any(current_user.id == elem['user'].id for elem in response):
+    if not find_user_in_group_db(db, current_user.id, group_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You are not a member of this group"
         )
+    response = get_users_in_group_from_db(db, group_id)
     result = []
     for elem in response:
         member = elem['user']
@@ -111,8 +111,7 @@ def get_my_invites_to_groups(db, current_user: User):
 
 def leave_from_group(db, current_user: User, group_id: int):
     group = get_group(db, group_id)
-    response = get_users_in_group_from_db(db, group_id)
-    if not any(current_user.id == elem['user'].id for elem in response):
+    if not find_user_in_group_db(db, current_user.id, group_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You are not a member of this group"

@@ -22,6 +22,13 @@ def create_user_in_group_db(db, user_id: int, group_id: int):
     return user_in_group_db
 
 
+def find_user_in_group_db(db, user_id: int, group_id: int):
+    query = db.query(UserInGroupDB)
+    query = query.filter(UserInGroupDB.user_id == user_id)
+    query = query.filter(UserInGroupDB.group_id == group_id)
+    return query.first()
+
+
 def delete_user_in_group_db(db, user_id: int, group_id: int):
     query = db.query(UserInGroupDB)
     query = query.filter(UserInGroupDB.user_id == user_id)
