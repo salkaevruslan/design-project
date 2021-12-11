@@ -2,6 +2,6 @@ import enum
 
 
 class TaskPriority(enum.Enum):
-    HIGH = "HIGH"
     MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
     LOW = "LOW"

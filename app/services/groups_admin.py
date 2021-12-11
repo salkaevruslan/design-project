@@ -3,12 +3,15 @@ from fastapi import HTTPException, status
 from app.db.repository.groups import delete_user_in_group_db, find_user_in_group_db, find_admin_in_group_db, \
     get_users_in_group_from_db
 from app.db.repository.invites import get_group_invites_from_db, get_invite_by_params_db, create_invite_db
+from app.db.repository.tasks import create_task_db, create_group_task_db
 from app.db.repository.users import get_user_by_name_db
 from app.models.domain.invite import Invite
+from app.models.domain.tasks import Task
 from app.models.domain.users import User
 from app.models.enums.groups import GroupRole
 from app.models.enums.invite import InviteStatus
 from app.models.schemas.groups import GroupAndUserRequest
+from app.models.schemas.tasks import GroupTaskCreationRequest
 from app.services.groups import get_group, get_invite
 
 
@@ -134,3 +137,18 @@ def delete_group(db, current_user: User, group_id: int):
     db.commit()
     db.delete(group)
     db.commit()
+
+
+def create_group_task(db, current_user: User, request: GroupTaskCreationRequest):
+    get_group_as_admin(db, current_user, request.group_id)
+    new_db_task = create_task_db(db, request)
+    create_group_task_db(db, request.group_id, new_db_task.id)
+    return Task(
+        id=new_db_task.id,
+        type=new_db_task.type,
+        creation_datetime=new_db_task.creation_datetime,
+        name=new_db_task.name,
+        description=new_db_task.name,
+        priority=new_db_task.priority,
+        start_time=new_db_task.start_time
+    )

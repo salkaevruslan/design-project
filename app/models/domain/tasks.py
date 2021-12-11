@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -12,4 +13,4 @@ class Task(BaseModel):
     name: str
     description: str
     priority: TaskPriority
-    start_time: datetime.datetime
+    start_time: Optional[datetime.datetime]

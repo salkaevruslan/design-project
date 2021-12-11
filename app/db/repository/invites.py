@@ -1,4 +1,5 @@
-from app.db.models.groups import InviteDB, GroupDB, UserInGroupDB
+from app.db.models.groups import GroupDB
+from app.db.models.invites import InviteDB
 from app.db.models.users import UserDB
 from app.db.repository.groups import find_admin_in_group_db
 from app.db.repository.users import get_user_by_id_db
