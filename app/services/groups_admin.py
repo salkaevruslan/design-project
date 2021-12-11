@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 
-from app.db.repository.groups import delete_user_in_group_db, find_user_in_group_db, find_admin_in_group_db
+from app.db.repository.groups import delete_user_in_group_db, find_user_in_group_db, find_admin_in_group_db, \
+    get_users_in_group_from_db
 from app.db.repository.invites import get_group_invites_from_db, get_invite_by_params_db, create_invite_db
 from app.db.repository.users import get_user_by_name_db
 from app.models.domain.invite import Invite
@@ -122,3 +123,14 @@ def kick_user_from_group(db, current_user: User, request: GroupAndUserRequest):
             detail="Yau cannot kick yourself"
         )
     delete_user_in_group_db(db, user.id, group.id)
+
+
+def delete_group(db, current_user: User, group_id: int):
+    group = get_group_as_admin(db, current_user, group_id)
+    members = get_users_in_group_from_db(db, group_id)
+    for member_info in members:
+        user_in_group = find_user_in_group_db(db, member_info['user'].id, group_id)
+        db.delete(user_in_group)
+    db.commit()
+    db.delete(group)
+    db.commit()

@@ -41,3 +41,10 @@ async def kick_user_from_group(request: GroupAndUserRequest, current_user: User 
                                db: Session = Depends(get_database)):
     admin_service.kick_user_from_group(db, current_user, request)
     return f"{request.user_name} is kicked from group"
+
+
+@router.delete("/delete")
+async def delete_group(group_id: int, current_user: User = Depends(get_current_user),
+                       db: Session = Depends(get_database)):
+    admin_service.delete_group(db, current_user, group_id)
+    return f"Group successfully deleted"
