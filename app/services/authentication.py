@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.db.db import get_database
-from app.db.repository.users import create_user_db, get_user_by_name_db
+from app.db.repository.users import create_user_db, get_user_by_name_db, get_user_by_email_db
 from app.models.domain.users import User
 from app.models.schemas.users import UserCreationRequest
 
@@ -66,5 +66,15 @@ async def get_current_user(db: Session = Depends(get_database), token: str = Dep
 
 def create_user(db, request: UserCreationRequest):
     password_hash = get_password_hash(request.password)
+    if get_user_by_name_db(db, request.username) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User with this name already exists"
+        )
+    if get_user_by_email_db(db, request.username) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User with this email already exists"
+        )
     new_db_user = create_user_db(db, request, password_hash)
     return User(id=new_db_user.id, username=new_db_user.username, email=new_db_user.email)

@@ -1,6 +1,6 @@
 from app.db.models.groups import InviteDB, GroupDB
 from app.db.models.users import UserDB
-from app.models.schemas.groups import InviteStatus
+from app.models.enums.invite import InviteStatus
 
 
 def create_invite_db(db, invited_user_id: int, group_id: int):

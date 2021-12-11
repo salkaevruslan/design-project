@@ -3,9 +3,10 @@ from fastapi import HTTPException, status
 from app.db.repository.groups import delete_user_in_group_db, find_user_in_group_db
 from app.db.repository.invites import get_group_invites_from_db, get_invite_by_params_db, create_invite_db
 from app.db.repository.users import get_user_by_name_db
-from app.models.domain.groups import Invite
+from app.models.domain.invite import Invite
 from app.models.domain.users import User
-from app.models.schemas.groups import InviteStatus, GroupAndUserRequest
+from app.models.enums.invite import InviteStatus
+from app.models.schemas.groups import GroupAndUserRequest
 from app.services.groups import get_group, get_invite
 
 

@@ -3,7 +3,7 @@ from sqlalchemy import Integer, Column, ForeignKey, String, DateTime, Enum
 from app.db.db import Base
 import datetime
 
-from app.models.schemas.groups import InviteStatus
+from app.models.enums.invite import InviteStatus
 
 
 class GroupDB(Base):

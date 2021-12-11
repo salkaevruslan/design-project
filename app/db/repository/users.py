@@ -18,5 +18,9 @@ def get_user_by_name_db(db, username: str):
     return db.query(UserDB).filter(UserDB.username == username).first()
 
 
+def get_user_by_email_db(db, email: str):
+    return db.query(UserDB).filter(UserDB.email == email).first()
+
+
 def get_user_by_id_db(db, user_id: int):
     return db.query(UserDB).filter(UserDB.id == user_id).first()
