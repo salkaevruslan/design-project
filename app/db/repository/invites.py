@@ -1,5 +1,7 @@
-from app.db.models.groups import InviteDB, GroupDB
+from app.db.models.groups import InviteDB, GroupDB, UserInGroupDB
 from app.db.models.users import UserDB
+from app.db.repository.groups import find_admin_in_group_db
+from app.db.repository.users import get_user_by_id_db
 from app.models.enums.invite import InviteStatus
 
 
@@ -24,16 +26,17 @@ def get_invite_by_id_db(db, invite_id: int):
 
 
 def get_user_invites_from_db(db, user_id: int):
-    query = db.query(InviteDB, GroupDB, UserDB)
+    query = db.query(InviteDB, GroupDB)
     query = query.filter(InviteDB.user_id == user_id)
     query = query.join(GroupDB, InviteDB.group_id == GroupDB.id)
-    query = query.join(UserDB, GroupDB.admin_id == UserDB.id)
     result = []
-    for invite, group, user in query.all():
+    for invite, group in query.all():
+        admin_in_group = find_admin_in_group_db(db, group.id)
+        admin = get_user_by_id_db(db, admin_in_group.user_id)
         result.append({
             'invite': invite,
             'group': group,
-            'admin': user,
+            'admin': admin,
         })
     return result
 

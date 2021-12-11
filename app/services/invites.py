@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 
 from app.db.repository.groups import create_user_in_group_db
 from app.db.repository.invites import get_user_invites_from_db
+from app.models.domain.groups import Group
 from app.models.domain.users import User
 from app.models.enums.invite import InviteStatus
 from app.services.groups import get_invite
@@ -20,6 +21,7 @@ def get_my_invites_to_groups(db, current_user: User):
             'status': invite.status,
             'group': Group(id=group.id,
                            name=group.name,
+                           creation_datetime=group.creation_datetime,
                            admin=User(id=admin.id,
                                       username=admin.username,
                                       email=admin.email)

@@ -1,10 +1,11 @@
 from fastapi import HTTPException, status
 
-from app.db.repository.groups import delete_user_in_group_db, find_user_in_group_db
+from app.db.repository.groups import delete_user_in_group_db, find_user_in_group_db, find_admin_in_group_db
 from app.db.repository.invites import get_group_invites_from_db, get_invite_by_params_db, create_invite_db
 from app.db.repository.users import get_user_by_name_db
 from app.models.domain.invite import Invite
 from app.models.domain.users import User
+from app.models.enums.groups import GroupRole
 from app.models.enums.invite import InviteStatus
 from app.models.schemas.groups import GroupAndUserRequest
 from app.services.groups import get_group, get_invite
@@ -12,10 +13,11 @@ from app.services.groups import get_group, get_invite
 
 def get_group_as_admin(db, current_user: User, group_id: int):
     group = get_group(db, group_id)
-    if group.admin_id != current_user.id:
+    admin_in_group = find_admin_in_group_db(db, group_id)
+    if admin_in_group.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only admin can take this action"
+            detail="You are not admin of this group"
         )
     return group
 
@@ -38,12 +40,7 @@ def get_invites_to_group(db, current_user: User, group_id: int):
 
 def cancel_invite_to_group(db, current_user: User, invite_id: int):
     invite = get_invite(db, invite_id)
-    group = get_group_as_admin(db, current_user, invite.group_id)
-    if group.admin_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only admin can modify invites to group"
-        )
+    get_group_as_admin(db, current_user, invite.group_id)
     if invite.status != InviteStatus.SENT:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -80,20 +77,30 @@ def invite_user_to_group(db, current_user: User, request: GroupAndUserRequest):
 
 
 def change_group_admin(db, current_user: User, request: GroupAndUserRequest):
-    group = get_group_as_admin(db, current_user, request.group_id)
-    if not find_user_in_group_db(db, current_user.id, request.group_id):
+    get_group_as_admin(db, current_user, request.group_id)
+    new_admin_user = get_user_by_name_db(db, request.user_name)
+    if not new_admin_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found"
+        )
+    if current_user.id == new_admin_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are already admin of this group"
+        )
+    new_admin_in_group = find_user_in_group_db(db, new_admin_user.id, request.group_id)
+    current_user_in_group = find_user_in_group_db(db, current_user.id, request.group_id)
+    if not new_admin_in_group:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is not a member of this group"
         )
-    user = get_user_by_name_db(db, request.user_name)
-    if current_user.id == user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Yau are already admin of this group"
-        )
+    new_admin_in_group.role = GroupRole.ADMIN
+    current_user_in_group.role = GroupRole.MEMBER
     db.commit()
-    db.refresh(group)
+    db.refresh(current_user_in_group)
+    db.refresh(new_admin_in_group)
 
 
 def kick_user_from_group(db, current_user: User, request: GroupAndUserRequest):
