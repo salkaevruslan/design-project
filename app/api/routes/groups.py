@@ -10,7 +10,7 @@ import app.services.groups as groups_service
 router = APIRouter()
 
 
-@router.get("/my-groups")
+@router.get("/list")
 async def my_groups(current_user: User = Depends(get_current_user), db: Session = Depends(get_database)):
     return groups_service.get_user_groups(db, current_user)
 
