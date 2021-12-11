@@ -105,12 +105,17 @@ def change_group_admin(db, current_user: User, request: GroupAndUserRequest):
 
 def kick_user_from_group(db, current_user: User, request: GroupAndUserRequest):
     group = get_group_as_admin(db, current_user, request.group_id)
-    if not find_user_in_group_db(db, current_user.id, request.group_id):
+    user = get_user_by_name_db(db, request.user_name)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found"
+        )
+    if not find_user_in_group_db(db, user.id, request.group_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is not a member of this group"
         )
-    user = get_user_by_name_db(db, request.user_name)
     if current_user.id == user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
