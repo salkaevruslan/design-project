@@ -99,3 +99,16 @@ def get_user_suggestions_to_group_db(db, user_id: int, group_id: int):
     for group_task_suggestion, task in query.all():
         result.append(task)
     return result
+
+
+def get_suggestions_to_group_db(db, group_id: int):
+    query = db.query(GroupTaskSuggestionDB, TaskDB)
+    query = query.filter(GroupTaskSuggestionDB.group_id == group_id)
+    query = query.join(TaskDB, GroupTaskSuggestionDB.task_id == TaskDB.id)
+    result = []
+    for group_task_suggestion, task in query.all():
+        result.append({
+            'user_id': group_task_suggestion.user_id,
+            'task': task
+        })
+    return result

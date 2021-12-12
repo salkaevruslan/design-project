@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from app.db.repository.groups import get_user_groups_from_db
 from app.db.repository.tasks import create_task_db, create_user_task_db, create_group_task_db, get_task_by_id_db, \
     find_user_task_db, delete_user_task_db, get_personal_tasks_db, get_group_tasks_db, find_group_task_db, \
-    delete_group_task_db, create_group_task_suggestion_db, get_user_suggestions_to_group_db
+    delete_group_task_db, create_group_task_suggestion_db, get_user_suggestions_to_group_db, get_suggestions_to_group_db
 from app.models.domain.tasks import Task
 from app.models.domain.users import User
 from app.models.enums.tasks import TaskOwnerType, TaskStatus
@@ -167,4 +167,27 @@ def get_my_task_suggestions_to_group(db, current_user: User, group_id: int):
                 start_time=task.start_time
             )
         )
+    return response
+
+
+def get_all_task_suggestions_to_group(db, current_user: User, group_id: int):
+    get_group_as_admin(db, current_user, group_id)
+    result = get_suggestions_to_group_db(db, group_id)
+    response = []
+    for elem in result:
+        task = elem['task']
+        response.append(
+            {
+                'user_id': elem['user_id'],
+                'task': Task(
+                    id=task.id,
+                    type=task.type,
+                    status=task.status,
+                    creation_datetime=task.creation_datetime,
+                    name=task.name,
+                    description=task.name,
+                    priority=task.priority,
+                    start_time=task.start_time
+                )
+            })
     return response
