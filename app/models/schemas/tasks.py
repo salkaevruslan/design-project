@@ -1,11 +1,11 @@
 import datetime
 from pydantic import BaseModel
 
-from app.models.enums.tasks import TaskPriority
+from app.models.enums.tasks import TaskPriority, TaskType
 
 
 class UserTaskCreationRequest(BaseModel):
-    type: str
+    type: TaskType = TaskType.UNDEFINED
     name: str
     description: str
     priority: TaskPriority = TaskPriority.MEDIUM

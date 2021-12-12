@@ -3,14 +3,15 @@ import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey
 
 from app.db.db import Base
-from app.models.enums.tasks import TaskPriority
+from app.models.enums.tasks import TaskPriority, TaskType, TaskStatus
 
 
 class TaskDB(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True)
-    type = Column(String)
+    type = Column(Enum(TaskType), default=TaskType.UNDEFINED)
+    status = Column(Enum(TaskStatus), default=TaskStatus.ACTIVE)
     creation_datetime = Column(DateTime, default=datetime.datetime.utcnow)
     name = Column(String)
     description = Column(String)

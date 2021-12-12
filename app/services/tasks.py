@@ -6,6 +6,7 @@ from app.db.repository.tasks import create_task_db, create_user_task_db, create_
     delete_group_task_db
 from app.models.domain.tasks import Task
 from app.models.domain.users import User
+from app.models.enums.tasks import TaskOwnerType
 from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest
 from app.services.groups import get_group_as_member
 from app.services.groups_admin import get_group_as_admin
@@ -27,6 +28,7 @@ def create_user_task(db, current_user: User, request: UserTaskCreationRequest):
     return Task(
         id=new_db_task.id,
         type=new_db_task.type,
+        status=new_db_task.status,
         creation_datetime=new_db_task.creation_datetime,
         name=new_db_task.name,
         description=new_db_task.name,
@@ -58,6 +60,7 @@ def get_personal_tasks(db, current_user: User):
             Task(
                 id=task.id,
                 type=task.type,
+                status=task.status,
                 creation_datetime=task.creation_datetime,
                 name=task.name,
                 description=task.name,
@@ -77,6 +80,7 @@ def get_group_tasks(db, current_user: User, group_id: int):
             Task(
                 id=task.id,
                 type=task.type,
+                status=task.status,
                 creation_datetime=task.creation_datetime,
                 name=task.name,
                 description=task.name,
@@ -92,7 +96,7 @@ def get_all_tasks(db, current_user: User):
     personal_tasks = get_personal_tasks(db, current_user)
     for task in personal_tasks:
         response.append({
-            'owner': 'personal',
+            'owner': TaskOwnerType.PERSONAL,
             'owner_id': current_user.id,
             'task': task
         })
@@ -101,7 +105,7 @@ def get_all_tasks(db, current_user: User):
         group_tasks = get_group_tasks(db, current_user, info['group'].id)
         for task in group_tasks:
             response.append({
-                'owner': 'group',
+                'owner': TaskOwnerType.GROUP,
                 'owner_id': info['group'].id,
                 'task': task
             })
