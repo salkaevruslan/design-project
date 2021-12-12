@@ -70,3 +70,17 @@ async def suggest_group_task(group_id: int, current_user: User = Depends(get_cur
 async def suggest_group_task(group_id: int, current_user: User = Depends(get_current_user),
                              db: Session = Depends(get_database)):
     return tasks_service.get_all_task_suggestions_to_group(db, current_user, group_id)
+
+
+@router.post("/group/suggestions/accept")
+async def suggest_group_task(task_id: int, current_user: User = Depends(get_current_user),
+                             db: Session = Depends(get_database)):
+    tasks_service.process_suggested_task(db, current_user, task_id, True)
+    return "Task suggestion accepted"
+
+
+@router.post("/group/suggestions/decline")
+async def suggest_group_task(task_id: int, current_user: User = Depends(get_current_user),
+                             db: Session = Depends(get_database)):
+    tasks_service.process_suggested_task(db, current_user, task_id, False)
+    return "Task suggestion declines"

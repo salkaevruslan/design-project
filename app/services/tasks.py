@@ -3,7 +3,8 @@ from fastapi import HTTPException, status
 from app.db.repository.groups import get_user_groups_from_db
 from app.db.repository.tasks import create_task_db, create_user_task_db, create_group_task_db, get_task_by_id_db, \
     find_user_task_db, delete_user_task_db, get_personal_tasks_db, get_group_tasks_db, find_group_task_db, \
-    delete_group_task_db, create_group_task_suggestion_db, get_user_suggestions_to_group_db, get_suggestions_to_group_db
+    delete_group_task_db, create_group_task_suggestion_db, get_user_suggestions_to_group_db, \
+    get_suggestions_to_group_db, find_group_task_suggestion_db
 from app.models.domain.tasks import Task
 from app.models.domain.users import User
 from app.models.enums.tasks import TaskOwnerType, TaskStatus
@@ -20,6 +21,18 @@ def get_task(db, task_id: int):
             detail="Task not found"
         )
     return task
+
+
+def get_task_with_owner_type_validation(db, task_id: int, type : TaskOwnerType):
+    task = get_task(db, task_id)
+    if type == TaskOwnerType.PERSONAL and find_user_task_db(db, task_id):
+        return task
+    if type == TaskOwnerType.GROUP and find_group_task_db(db, task_id):
+        return task
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Task owner does not match"
+    )
 
 
 def create_user_task(db, current_user: User, request: UserTaskCreationRequest):
@@ -129,7 +142,7 @@ def get_all_tasks(db, current_user: User):
 
 
 def delete_user_task(db, current_user: User, task_id: int):
-    task = get_task(db, task_id)
+    task = get_task_with_owner_type_validation(db, task_id, TaskOwnerType.PERSONAL)
     user_task_db = find_user_task_db(db, task_id)
     if not user_task_db or user_task_db.user_id != current_user.id:
         raise HTTPException(
@@ -142,7 +155,7 @@ def delete_user_task(db, current_user: User, task_id: int):
 
 
 def delete_group_task(db, current_user: User, task_id: int):
-    task = get_task(db, task_id)
+    task = get_task_with_owner_type_validation(db, task_id, TaskOwnerType.GROUP)
     group_task_db = find_group_task_db(db, task_id)
     get_group_as_admin(db, current_user, group_task_db.group_id)
     delete_group_task_db(db, task_id)
@@ -191,3 +204,24 @@ def get_all_task_suggestions_to_group(db, current_user: User, group_id: int):
                 )
             })
     return response
+
+
+def process_suggested_task(db, current_user: User, task_id: int, is_accept: bool):
+    task = get_task(db, task_id)
+    group_task_suggestion_db = find_group_task_suggestion_db(db, task_id)
+    if not group_task_suggestion_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Task suggestion not found"
+        )
+    get_group_as_admin(db, current_user, group_task_suggestion_db.group_id)
+    if is_accept:
+        task.status = TaskStatus.ACTIVE
+        create_group_task_db(db, group_task_suggestion_db.group_id, task_id)
+        db.delete(group_task_suggestion_db)
+        db.commit()
+        db.refresh(task)
+    else:
+        db.delete(group_task_suggestion_db)
+        db.delete(task)
+        db.commit()

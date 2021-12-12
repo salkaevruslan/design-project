@@ -56,6 +56,12 @@ def find_group_task_db(db, task_id: int):
     return query.first()
 
 
+def find_group_task_suggestion_db(db, task_id: int):
+    query = db.query(GroupTaskSuggestionDB)
+    query = query.filter(GroupTaskSuggestionDB.task_id == task_id)
+    return query.first()
+
+
 def delete_user_task_db(db, task_id: int):
     user_task_db = find_user_task_db(db, task_id)
     if user_task_db:
