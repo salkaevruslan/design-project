@@ -1,9 +1,11 @@
-from app.db.models.tasks import TaskDB, UserTaskDB, GroupTaskDB
+from app.db.models.tasks import TaskDB, UserTaskDB, GroupTaskDB, GroupTaskSuggestionDB
+from app.models.enums.tasks import TaskStatus
 from app.models.schemas.tasks import UserTaskCreationRequest
 
 
-def create_task_db(db, request: UserTaskCreationRequest):
+def create_task_db(db, request: UserTaskCreationRequest, status: TaskStatus = TaskStatus.ACTIVE):
     new_db_task = TaskDB(type=request.type,
+                         status=status,
                          name=request.name,
                          description=request.description,
                          priority=request.priority,
@@ -28,6 +30,14 @@ def create_group_task_db(db, group_id: int, task_id: int):
     db.commit()
     db.refresh(group_task)
     return group_task
+
+
+def create_group_task_suggestion_db(db, user_id, group_id: int, task_id: int):
+    group_task_suggestion = GroupTaskSuggestionDB(group_id=group_id, user_id=user_id, task_id=task_id)
+    db.add(group_task_suggestion)
+    db.commit()
+    db.refresh(group_task_suggestion)
+    return group_task_suggestion
 
 
 def get_task_by_id_db(db, task_id: int):
@@ -76,5 +86,16 @@ def get_group_tasks_db(db, group_id: int):
     query = query.join(TaskDB, GroupTaskDB.task_id == TaskDB.id)
     result = []
     for group_task, task in query.all():
+        result.append(task)
+    return result
+
+
+def get_user_suggestions_to_group_db(db, user_id: int, group_id: int):
+    query = db.query(GroupTaskSuggestionDB, TaskDB)
+    query = query.filter(GroupTaskSuggestionDB.group_id == group_id)
+    query = query.filter(GroupTaskSuggestionDB.user_id == user_id)
+    query = query.join(TaskDB, GroupTaskSuggestionDB.task_id == TaskDB.id)
+    result = []
+    for group_task_suggestion, task in query.all():
         result.append(task)
     return result

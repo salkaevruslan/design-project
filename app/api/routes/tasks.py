@@ -52,3 +52,15 @@ async def delete_group_task(task_id: int, current_user: User = Depends(get_curre
                             db: Session = Depends(get_database)):
     tasks_service.delete_group_task(db, current_user, task_id)
     return "Group task deleted"
+
+
+@router.post("/group/suggestions/create", status_code=status.HTTP_201_CREATED)
+async def suggest_group_task(request: GroupTaskCreationRequest, current_user: User = Depends(get_current_user),
+                             db: Session = Depends(get_database)):
+    return tasks_service.create_group_task_suggestion(db, current_user, request)
+
+
+@router.get("/group/suggestions/my", status_code=status.HTTP_201_CREATED)
+async def suggest_group_task(group_id: int, current_user: User = Depends(get_current_user),
+                             db: Session = Depends(get_database)):
+    return tasks_service.get_my_task_suggestions_to_group(db, current_user, group_id)

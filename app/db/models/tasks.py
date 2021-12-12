@@ -22,12 +22,20 @@ class TaskDB(Base):
 class UserTaskDB(Base):
     __tablename__ = "user_task"
 
-    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
     task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
 
 
 class GroupTaskDB(Base):
     __tablename__ = "group_task"
 
+    group_id = Column(Integer, ForeignKey('groups.id'))
+    task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+
+
+class GroupTaskSuggestionDB(Base):
+    __tablename__ = "group_task_suggestion"
+
     group_id = Column(Integer, ForeignKey('groups.id'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
     task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
