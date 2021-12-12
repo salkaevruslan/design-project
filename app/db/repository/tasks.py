@@ -1,6 +1,6 @@
 from app.db.models.tasks import TaskDB, UserTaskDB, GroupTaskDB, GroupTaskSuggestionDB
 from app.models.enums.tasks import TaskStatus
-from app.models.schemas.tasks import UserTaskCreationRequest, TaskFilterRequest
+from app.models.schemas.tasks import UserTaskCreationRequest, TaskFilterRequest, TaskUpdateRequest
 
 
 def create_task_db(db, request: UserTaskCreationRequest, status: TaskStatus = TaskStatus.ACTIVE):
@@ -134,3 +134,19 @@ def apply_tasks_filters(query, request: TaskFilterRequest):
     if request.period_end is not None:
         query = query.filter(TaskDB.start_time <= request.period_end)
     return query
+
+
+def apply_task_update_db(db, request: TaskUpdateRequest):
+    task = get_task_by_id_db(db, request.task_id)
+    if request.status is not None:
+        task.status = request.status
+    if request.type is not None:
+        task.type = request.type
+    if request.priority is not None:
+        task.priority = request.priority
+    if request.description is not None:
+        task.description = request.description
+    if request.start_time is not None:
+        task.start_time = request.start_time
+    db.commit()
+    db.refresh(task)

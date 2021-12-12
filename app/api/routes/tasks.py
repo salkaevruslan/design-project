@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.db import get_database
 from app.models.domain.users import User
 from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest, GroupTaskFilterRequest, \
-    TaskFilterRequest
+    TaskFilterRequest, TaskUpdateRequest
 from app.services.authentication import get_current_user
 import app.services.tasks as tasks_service
 
@@ -55,6 +55,13 @@ async def delete_group_task(task_id: int, current_user: User = Depends(get_curre
     return "Group task deleted"
 
 
+@router.delete("/group/suggestions/delete")
+async def delete_suggested_task(task_id: int, current_user: User = Depends(get_current_user),
+                                db: Session = Depends(get_database)):
+    tasks_service.delete_suggested_task(db, current_user, task_id)
+    return "Suggested task deleted"
+
+
 @router.post("/group/suggestions/create", status_code=status.HTTP_201_CREATED)
 async def suggest_group_task(request: GroupTaskCreationRequest, current_user: User = Depends(get_current_user),
                              db: Session = Depends(get_database)):
@@ -85,3 +92,24 @@ async def decline_task_suggestion(task_id: int, current_user: User = Depends(get
                                   db: Session = Depends(get_database)):
     tasks_service.process_suggested_task(db, current_user, task_id, False)
     return "Task suggestion declines"
+
+
+@router.post("/personal/update")
+async def update_user_task(request: TaskUpdateRequest, current_user: User = Depends(get_current_user),
+                           db: Session = Depends(get_database)):
+    tasks_service.update_user_task(db, current_user, request)
+    return "Personal task updates"
+
+
+@router.post("/group/update")
+async def update_group_task(request: TaskUpdateRequest, current_user: User = Depends(get_current_user),
+                            db: Session = Depends(get_database)):
+    tasks_service.update_group_task(db, current_user, request)
+    return "Group task updated"
+
+
+@router.post("/group/suggestions/update")
+async def update_suggested_task(request: TaskUpdateRequest, current_user: User = Depends(get_current_user),
+                                db: Session = Depends(get_database)):
+    tasks_service.update_suggested_task(db, current_user, request)
+    return "Suggested task updated"

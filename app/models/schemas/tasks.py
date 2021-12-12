@@ -1,7 +1,7 @@
 import datetime
 from pydantic import BaseModel
 
-from app.models.enums.tasks import TaskPriority, TaskType
+from app.models.enums.tasks import TaskPriority, TaskType, TaskStatus
 
 
 class UserTaskCreationRequest(BaseModel):
@@ -25,3 +25,12 @@ class TaskFilterRequest(BaseModel):
 
 class GroupTaskFilterRequest(TaskFilterRequest):
     group_id: int
+
+
+class TaskUpdateRequest(BaseModel):
+    task_id: int
+    status: TaskStatus = None
+    type: TaskType = None
+    description: str = None
+    priority: TaskPriority = None
+    start_time: datetime.datetime = None

@@ -24,3 +24,4 @@ class TaskType(enum.Enum):
 class TaskOwnerType(enum.Enum):
     PERSONAL = "PERSONAL"
     GROUP = "GROUP"
+    GROUP_SUGGESTED = "GROUP_SUGGESTED"
