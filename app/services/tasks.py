@@ -5,7 +5,8 @@ import app.db.repository.tasks as tasks_repository
 from app.models.domain.tasks import Task
 from app.models.domain.users import User
 from app.models.enums.tasks import TaskOwnerType, TaskStatus
-from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest
+from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest, TaskFilterRequest, \
+    GroupTaskFilterRequest
 from app.services.groups import get_group_as_member
 from app.services.groups_admin import get_group_as_admin
 
@@ -78,8 +79,8 @@ def create_group_task(db, current_user: User, request: GroupTaskCreationRequest)
     )
 
 
-def get_personal_tasks(db, current_user: User):
-    result = tasks_repository.get_personal_tasks_db(db, current_user.id)
+def get_personal_tasks(db, current_user: User, request: TaskFilterRequest):
+    result = tasks_repository.get_personal_tasks_db(db, current_user.id, request)
     response = []
     for task in result:
         response.append(
@@ -97,9 +98,9 @@ def get_personal_tasks(db, current_user: User):
     return response
 
 
-def get_group_tasks(db, current_user: User, group_id: int):
+def get_group_tasks(db, current_user: User, group_id: int, request: TaskFilterRequest):
     get_group_as_member(db, current_user, group_id)
-    result = tasks_repository.get_group_tasks_db(db, group_id)
+    result = tasks_repository.get_group_tasks_db(db, group_id, request)
     response = []
     for task in result:
         response.append(
@@ -117,9 +118,9 @@ def get_group_tasks(db, current_user: User, group_id: int):
     return response
 
 
-def get_all_tasks(db, current_user: User):
+def get_all_tasks(db, current_user: User, request: TaskFilterRequest):
     response = []
-    personal_tasks = get_personal_tasks(db, current_user)
+    personal_tasks = get_personal_tasks(db, current_user, request)
     for task in personal_tasks:
         response.append({
             'owner': TaskOwnerType.PERSONAL,
@@ -128,7 +129,7 @@ def get_all_tasks(db, current_user: User):
         })
     groups_info = groups_repository.get_user_groups_from_db(db, current_user.id)
     for info in groups_info:
-        group_tasks = get_group_tasks(db, current_user, info['group'].id)
+        group_tasks = get_group_tasks(db, current_user, info['group'].id, request)
         for task in group_tasks:
             response.append({
                 'owner': TaskOwnerType.GROUP,
@@ -160,9 +161,9 @@ def delete_group_task(db, current_user: User, task_id: int):
     db.commit()
 
 
-def get_my_task_suggestions_to_group(db, current_user: User, group_id: int):
+def get_my_task_suggestions_to_group(db, current_user: User, group_id: int, request: TaskFilterRequest):
     get_group_as_member(db, current_user, group_id)
-    result = tasks_repository.get_user_suggestions_to_group_db(db, current_user.id, group_id)
+    result = tasks_repository.get_user_suggestions_to_group_db(db, current_user.id, group_id, request)
     response = []
     for task in result:
         response.append(
@@ -180,9 +181,9 @@ def get_my_task_suggestions_to_group(db, current_user: User, group_id: int):
     return response
 
 
-def get_all_task_suggestions_to_group(db, current_user: User, group_id: int):
+def get_all_task_suggestions_to_group(db, current_user: User, group_id: int, request: TaskFilterRequest):
     get_group_as_admin(db, current_user, group_id)
-    result = tasks_repository.get_suggestions_to_group_db(db, group_id)
+    result = tasks_repository.get_suggestions_to_group_db(db, group_id, request)
     response = []
     for elem in result:
         task = elem['task']

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.db.db import get_database
 from app.models.domain.users import User
-from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest
+from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest, GroupTaskFilterRequest, \
+    TaskFilterRequest
 from app.services.authentication import get_current_user
 import app.services.tasks as tasks_service
 
@@ -22,22 +23,22 @@ async def create_group_task(request: GroupTaskCreationRequest, current_user: Use
     return tasks_service.create_group_task(db, current_user, request)
 
 
-@router.get("/all/list")
-async def all_user_tasks(current_user: User = Depends(get_current_user),
+@router.post("/all/list")
+async def all_user_tasks(request: TaskFilterRequest, current_user: User = Depends(get_current_user),
                          db: Session = Depends(get_database)):
-    return tasks_service.get_all_tasks(db, current_user)
+    return tasks_service.get_all_tasks(db, current_user, request)
 
 
-@router.get("/personal/list")
-async def my_personal_tasks(current_user: User = Depends(get_current_user),
+@router.post("/personal/list")
+async def my_personal_tasks(request: TaskFilterRequest, current_user: User = Depends(get_current_user),
                             db: Session = Depends(get_database)):
-    return tasks_service.get_personal_tasks(db, current_user)
+    return tasks_service.get_personal_tasks(db, current_user, request)
 
 
-@router.get("/group/list")
-async def my_group_tasks(group_id: int, current_user: User = Depends(get_current_user),
+@router.post("/group/list")
+async def my_group_tasks(request: GroupTaskFilterRequest, current_user: User = Depends(get_current_user),
                          db: Session = Depends(get_database)):
-    return tasks_service.get_group_tasks(db, current_user, group_id)
+    return tasks_service.get_group_tasks(db, current_user, request.group_id, request)
 
 
 @router.delete("/personal/delete")
@@ -60,27 +61,27 @@ async def suggest_group_task(request: GroupTaskCreationRequest, current_user: Us
     return tasks_service.create_group_task_suggestion(db, current_user, request)
 
 
-@router.get("/group/suggestions/my")
-async def suggest_group_task(group_id: int, current_user: User = Depends(get_current_user),
-                             db: Session = Depends(get_database)):
-    return tasks_service.get_my_task_suggestions_to_group(db, current_user, group_id)
+@router.post("/group/suggestions/my")
+async def get_my_group_task_suggestion(request: GroupTaskFilterRequest, current_user: User = Depends(get_current_user),
+                                       db: Session = Depends(get_database)):
+    return tasks_service.get_my_task_suggestions_to_group(db, current_user, request.group_id, request)
 
 
-@router.get("/group/suggestions/all")
-async def suggest_group_task(group_id: int, current_user: User = Depends(get_current_user),
-                             db: Session = Depends(get_database)):
-    return tasks_service.get_all_task_suggestions_to_group(db, current_user, group_id)
+@router.post("/group/suggestions/all")
+async def get_all_group_task_suggestion(request: GroupTaskFilterRequest, current_user: User = Depends(get_current_user),
+                                        db: Session = Depends(get_database)):
+    return tasks_service.get_all_task_suggestions_to_group(db, current_user, request.group_id, request)
 
 
 @router.post("/group/suggestions/accept")
-async def suggest_group_task(task_id: int, current_user: User = Depends(get_current_user),
-                             db: Session = Depends(get_database)):
+async def accept_task_suggestion(task_id: int, current_user: User = Depends(get_current_user),
+                                 db: Session = Depends(get_database)):
     tasks_service.process_suggested_task(db, current_user, task_id, True)
     return "Task suggestion accepted"
 
 
 @router.post("/group/suggestions/decline")
-async def suggest_group_task(task_id: int, current_user: User = Depends(get_current_user),
-                             db: Session = Depends(get_database)):
+async def decline_task_suggestion(task_id: int, current_user: User = Depends(get_current_user),
+                                  db: Session = Depends(get_database)):
     tasks_service.process_suggested_task(db, current_user, task_id, False)
     return "Task suggestion declines"

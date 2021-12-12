@@ -1,6 +1,6 @@
 from app.db.models.tasks import TaskDB, UserTaskDB, GroupTaskDB, GroupTaskSuggestionDB
 from app.models.enums.tasks import TaskStatus
-from app.models.schemas.tasks import UserTaskCreationRequest
+from app.models.schemas.tasks import UserTaskCreationRequest, TaskFilterRequest
 
 
 def create_task_db(db, request: UserTaskCreationRequest, status: TaskStatus = TaskStatus.ACTIVE):
@@ -76,41 +76,45 @@ def delete_group_task_db(db, task_id: int):
         db.commit()
 
 
-def get_personal_tasks_db(db, user_id: int):
+def get_personal_tasks_db(db, user_id: int, request: TaskFilterRequest):
     query = db.query(UserTaskDB, TaskDB)
     query = query.filter(UserTaskDB.user_id == user_id)
     query = query.join(TaskDB, UserTaskDB.task_id == TaskDB.id)
+    query = apply_tasks_filters(query, request)
     result = []
     for user_task, task in query.all():
         result.append(task)
     return result
 
 
-def get_group_tasks_db(db, group_id: int):
+def get_group_tasks_db(db, group_id: int, request: TaskFilterRequest):
     query = db.query(GroupTaskDB, TaskDB)
     query = query.filter(GroupTaskDB.group_id == group_id)
     query = query.join(TaskDB, GroupTaskDB.task_id == TaskDB.id)
+    query = apply_tasks_filters(query, request)
     result = []
     for group_task, task in query.all():
         result.append(task)
     return result
 
 
-def get_user_suggestions_to_group_db(db, user_id: int, group_id: int):
+def get_user_suggestions_to_group_db(db, user_id: int, group_id: int, request: TaskFilterRequest):
     query = db.query(GroupTaskSuggestionDB, TaskDB)
     query = query.filter(GroupTaskSuggestionDB.group_id == group_id)
     query = query.filter(GroupTaskSuggestionDB.user_id == user_id)
     query = query.join(TaskDB, GroupTaskSuggestionDB.task_id == TaskDB.id)
+    query = apply_tasks_filters(query, request)
     result = []
     for group_task_suggestion, task in query.all():
         result.append(task)
     return result
 
 
-def get_suggestions_to_group_db(db, group_id: int):
+def get_suggestions_to_group_db(db, group_id: int, request: TaskFilterRequest):
     query = db.query(GroupTaskSuggestionDB, TaskDB)
     query = query.filter(GroupTaskSuggestionDB.group_id == group_id)
     query = query.join(TaskDB, GroupTaskSuggestionDB.task_id == TaskDB.id)
+    query = apply_tasks_filters(query, request)
     result = []
     for group_task_suggestion, task in query.all():
         result.append({
@@ -118,3 +122,15 @@ def get_suggestions_to_group_db(db, group_id: int):
             'task': task
         })
     return result
+
+
+def apply_tasks_filters(query, request: TaskFilterRequest):
+    if request.type is not None:
+        query = query.filter(TaskDB.type == request.type)
+    if request.priority is not None:
+        query = query.filter(TaskDB.priority == request.priority)
+    if request.period_start is not None:
+        query = query.filter(TaskDB.start_time >= request.period_start)
+    if request.period_end is not None:
+        query = query.filter(TaskDB.start_time <= request.period_end)
+    return query

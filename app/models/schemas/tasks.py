@@ -14,3 +14,14 @@ class UserTaskCreationRequest(BaseModel):
 
 class GroupTaskCreationRequest(UserTaskCreationRequest):
     group_id: int
+
+
+class TaskFilterRequest(BaseModel):
+    period_start: datetime.datetime = None
+    period_end: datetime.datetime = None
+    type: TaskType = None
+    priority: TaskPriority = None
+
+
+class GroupTaskFilterRequest(TaskFilterRequest):
+    group_id: int
