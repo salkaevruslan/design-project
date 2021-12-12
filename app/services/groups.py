@@ -50,20 +50,22 @@ def get_invite(db, invite_id: int):
 
 
 def get_user_groups(db, user: User):
-    groups = get_user_groups_from_db(db, user.username)
-    result = []
-    for group in groups:
+    groups_info = get_user_groups_from_db(db, user.username)
+    response = []
+    for elem in groups_info:
+        group = elem['group']
         admin_in_group = find_admin_in_group_db(db, group.id)
         admin = get_user_by_id_db(db, admin_in_group.user_id)
-        result.append(Group(id=group.id,
-                            name=group.name,
-                            creation_datetime=group.creation_datetime,
-                            admin=User(id=admin.id,
-                                       username=admin.username,
-                                       email=admin.email)
-                            )
-                      )
-    return result
+        response.append({'group': Group(id=group.id,
+                                        name=group.name,
+                                        creation_datetime=group.creation_datetime,
+                                        admin=User(id=admin.id,
+                                                   username=admin.username,
+                                                   email=admin.email)
+                                        ),
+                         'role': elem['role']
+                         })
+    return response
 
 
 def get_group_members(db, current_user: User, group_id: int):

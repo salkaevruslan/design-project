@@ -31,4 +31,4 @@ async def get_group_members(group_id: int, current_user: User = Depends(get_curr
 async def leave_from_group(group_id: int, current_user: User = Depends(get_current_user),
                            db: Session = Depends(get_database)):
     groups_service.leave_from_group(db, current_user, group_id)
-    return "Ypu leaved from group"
+    return "You leaved from group"

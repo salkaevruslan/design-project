@@ -51,7 +51,10 @@ def get_user_groups_from_db(db, username: str):
     query = query.join(GroupDB, UserInGroupDB.group_id == GroupDB.id)
     result = []
     for user, user_in_group, group in query.all():
-        result.append(group)
+        result.append({
+            'role': user_in_group.role,
+            'group': group
+        })
     return result
 
 
