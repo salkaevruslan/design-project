@@ -23,14 +23,14 @@ def create_user_in_group_db(db, user_id: int, group_id: int, role: GroupRole = G
     return user_in_group_db
 
 
-def find_user_in_group_db(db, user_id: int, group_id: int):
+def get_user_in_group_db(db, user_id: int, group_id: int):
     query = db.query(UserInGroupDB)
     query = query.filter(UserInGroupDB.user_id == user_id)
     query = query.filter(UserInGroupDB.group_id == group_id)
     return query.first()
 
 
-def find_admin_in_group_db(db, group_id: int):
+def get_admin_in_group_db(db, group_id: int):
     query = db.query(UserInGroupDB)
     query = query.filter(UserInGroupDB.role == GroupRole.ADMIN)
     query = query.filter(UserInGroupDB.group_id == group_id)
@@ -38,7 +38,7 @@ def find_admin_in_group_db(db, group_id: int):
 
 
 def delete_user_in_group_db(db, user_id: int, group_id: int):
-    user_in_group_db = find_user_in_group_db(db, user_id, group_id)
+    user_in_group_db = get_user_in_group_db(db, user_id, group_id)
     if user_in_group_db:
         db.delete(user_in_group_db)
         db.commit()

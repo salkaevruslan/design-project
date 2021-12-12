@@ -44,33 +44,33 @@ def get_task_by_id_db(db, task_id: int):
     return db.query(TaskDB).filter(TaskDB.id == task_id).first()
 
 
-def find_user_task_db(db, task_id: int):
+def get_user_task_db(db, task_id: int):
     query = db.query(UserTaskDB)
     query = query.filter(UserTaskDB.task_id == task_id)
     return query.first()
 
 
-def find_group_task_db(db, task_id: int):
+def get_group_task_db(db, task_id: int):
     query = db.query(GroupTaskDB)
     query = query.filter(GroupTaskDB.task_id == task_id)
     return query.first()
 
 
-def find_group_task_suggestion_db(db, task_id: int):
+def get_group_task_suggestion_db(db, task_id: int):
     query = db.query(GroupTaskSuggestionDB)
     query = query.filter(GroupTaskSuggestionDB.task_id == task_id)
     return query.first()
 
 
 def delete_user_task_db(db, task_id: int):
-    user_task_db = find_user_task_db(db, task_id)
+    user_task_db = get_user_task_db(db, task_id)
     if user_task_db:
         db.delete(user_task_db)
         db.commit()
 
 
 def delete_group_task_db(db, task_id: int):
-    group_task_db = find_group_task_db(db, task_id)
+    group_task_db = get_group_task_db(db, task_id)
     if group_task_db:
         db.delete(group_task_db)
         db.commit()

@@ -1,20 +1,28 @@
 from fastapi import HTTPException, status
 
-from app.db.repository.groups import create_user_in_group_db, find_user_in_group_db
-from app.db.repository.invites import get_user_invites_from_db, get_invite_by_params_db, \
-    create_invite_db, get_group_invites_from_db
+import app.db.repository.groups as groups_repository
+import app.db.repository.invites as invites_repository
 from app.db.repository.users import get_user_by_name_db
 from app.models.domain.groups import Group
 from app.models.domain.invite import Invite
 from app.models.domain.users import User
 from app.models.enums.invite import InviteStatus
 from app.models.schemas.groups import GroupAndUserRequest
-from app.services.groups import get_invite
 from app.services.groups_admin import get_group_as_admin
 
 
+def get_invite(db, invite_id: int):
+    invite = invites_repository.get_invite_by_id_db(db, invite_id)
+    if not invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite not found"
+        )
+    return invite
+
+
 def get_my_invites_to_groups(db, current_user: User):
-    response = get_user_invites_from_db(db, current_user.id)
+    response = invites_repository.get_user_invites_from_db(db, current_user.id)
     result = []
     for elem in response:
         group = elem['group']
@@ -49,14 +57,14 @@ def process_invite_to_group(db, current_user: User, invite_id: int, is_accept: b
         )
     invite.status = InviteStatus.ACCEPTED if is_accept else InviteStatus.DECLINED
     if is_accept:
-        create_user_in_group_db(db, invite.user_id, invite.group_id)
+        groups_repository.create_user_in_group_db(db, invite.user_id, invite.group_id)
     db.commit()
     db.refresh(invite)
 
 
 def get_invites_to_group(db, current_user: User, group_id: int):
     get_group_as_admin(db, current_user, group_id)
-    response = get_group_invites_from_db(db, group_id)
+    response = invites_repository.get_group_invites_from_db(db, group_id)
     result = []
     for elem in response:
         user = elem['user']
@@ -90,17 +98,17 @@ def invite_user_to_group(db, current_user: User, request: GroupAndUserRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invited user not found"
         )
-    if find_user_in_group_db(db, invited_user.id, request.group_id):
+    if groups_repository.get_user_in_group_db(db, invited_user.id, request.group_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already a member of this group"
         )
-    if get_invite_by_params_db(db, request.group_id, invited_user.id, InviteStatus.SENT):
+    if invites_repository.get_invite_by_params_db(db, request.group_id, invited_user.id, InviteStatus.SENT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invite already sent"
         )
-    new_invite_db = create_invite_db(db, invited_user.id, request.group_id)
+    new_invite_db = invites_repository.create_invite_db(db, invited_user.id, request.group_id)
     return Invite(id=new_invite_db.id,
                   group_id=new_invite_db.group_id,
                   invited_user_id=new_invite_db.user_id,
