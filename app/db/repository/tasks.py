@@ -28,3 +28,45 @@ def create_group_task_db(db, group_id: int, task_id: int):
     db.commit()
     db.refresh(group_task)
     return group_task
+
+
+def get_task_by_id_db(db, task_id: int):
+    return db.query(TaskDB).filter(TaskDB.id == task_id).first()
+
+
+def find_user_task_db(db, user_id: int, task_id: int):
+    query = db.query(UserTaskDB)
+    query = query.filter(UserTaskDB.user_id == user_id)
+    query = query.filter(UserTaskDB.task_id == task_id)
+    return query.first()
+
+
+def find_group_task_db(db, group_id: int, task_id: int):
+    query = db.query(GroupTaskDB)
+    query = query.filter(GroupTaskDB.group_id == group_id)
+    query = query.filter(GroupTaskDB.task_id == task_id)
+    return query.first()
+
+
+def delete_user_task_db(db, user_id: int, task_id: int):
+    user_task_db = find_user_task_db(db, user_id, task_id)
+    if user_task_db:
+        db.delete(user_task_db)
+        db.commit()
+
+
+def delete_group_task_db(db, group_id: int, task_id: int):
+    group_task_db = find_group_task_db(db, group_id, task_id)
+    if group_task_db:
+        db.delete(group_task_db)
+        db.commit()
+
+
+def get_personal_tasks_db(db, user_id: int):
+    query = db.query(UserTaskDB, TaskDB)
+    query = query.filter(UserTaskDB.user_id == user_id)
+    query = query.join(TaskDB, UserTaskDB.task_id == TaskDB.id)
+    result = []
+    for user_task, task in query.all():
+        result.append(task)
+    return result

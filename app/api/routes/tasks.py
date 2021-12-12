@@ -10,7 +10,7 @@ import app.services.tasks as tasks_service
 router = APIRouter()
 
 
-@router.post("/create", status_code=status.HTTP_201_CREATED)
+@router.post("/personal/create", status_code=status.HTTP_201_CREATED)
 async def create_user_task(request: UserTaskCreationRequest, current_user: User = Depends(get_current_user),
                            db: Session = Depends(get_database)):
     return tasks_service.create_user_task(db, current_user, request)
@@ -20,3 +20,16 @@ async def create_user_task(request: UserTaskCreationRequest, current_user: User 
 async def create_group_task(request: GroupTaskCreationRequest, current_user: User = Depends(get_current_user),
                             db: Session = Depends(get_database)):
     return tasks_service.create_group_task(db, current_user, request)
+
+
+@router.get("/personal/list")
+async def my_personal_tasks(current_user: User = Depends(get_current_user),
+                            db: Session = Depends(get_database)):
+    return tasks_service.get_personal_tasks(db, current_user)
+
+
+@router.delete("/personal/delete")
+async def delete_user_task(task_id: int, current_user: User = Depends(get_current_user),
+                           db: Session = Depends(get_database)):
+    tasks_service.delete_user_task(db, current_user, task_id)
+    return "Task deleted"
