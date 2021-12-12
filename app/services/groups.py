@@ -49,8 +49,8 @@ def get_invite(db, invite_id: int):
     return invite
 
 
-def get_user_groups(db, user: User):
-    groups_info = get_user_groups_from_db(db, user.username)
+def get_user_groups(db, current_user: User):
+    groups_info = get_user_groups_from_db(db, current_user.id)
     response = []
     for elem in groups_info:
         group = elem['group']

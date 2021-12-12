@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from app.db.repository.groups import get_user_groups_from_db
 from app.db.repository.tasks import create_task_db, create_user_task_db, create_group_task_db, get_task_by_id_db, \
     find_user_task_db, delete_user_task_db, get_personal_tasks_db, get_group_tasks_db, find_group_task_db, \
     delete_group_task_db
@@ -83,6 +84,27 @@ def get_group_tasks(db, current_user: User, group_id: int):
                 start_time=task.start_time
             )
         )
+    return response
+
+
+def get_all_tasks(db, current_user: User):
+    response = []
+    personal_tasks = get_personal_tasks(db, current_user)
+    for task in personal_tasks:
+        response.append({
+            'owner': 'personal',
+            'owner_id': current_user.id,
+            'task': task
+        })
+    groups_info = get_user_groups_from_db(db, current_user.id)
+    for info in groups_info:
+        group_tasks = get_group_tasks(db, current_user, info['group'].id)
+        for task in group_tasks:
+            response.append({
+                'owner': 'group',
+                'owner_id': info['group'].id,
+                'task': task
+            })
     return response
 
 

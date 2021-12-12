@@ -22,6 +22,12 @@ async def create_group_task(request: GroupTaskCreationRequest, current_user: Use
     return tasks_service.create_group_task(db, current_user, request)
 
 
+@router.get("/all/list")
+async def all_user_tasks(current_user: User = Depends(get_current_user),
+                         db: Session = Depends(get_database)):
+    return tasks_service.get_all_tasks(db, current_user)
+
+
 @router.get("/personal/list")
 async def my_personal_tasks(current_user: User = Depends(get_current_user),
                             db: Session = Depends(get_database)):
@@ -29,8 +35,8 @@ async def my_personal_tasks(current_user: User = Depends(get_current_user),
 
 
 @router.get("/group/list")
-async def my_personal_tasks(group_id: int, current_user: User = Depends(get_current_user),
-                            db: Session = Depends(get_database)):
+async def my_group_tasks(group_id: int, current_user: User = Depends(get_current_user),
+                         db: Session = Depends(get_database)):
     return tasks_service.get_group_tasks(db, current_user, group_id)
 
 

@@ -44,9 +44,9 @@ def delete_user_in_group_db(db, user_id: int, group_id: int):
         db.commit()
 
 
-def get_user_groups_from_db(db, username: str):
+def get_user_groups_from_db(db, user_id: int):
     query = db.query(UserDB, UserInGroupDB, GroupDB)
-    query = query.filter(UserDB.username == username)
+    query = query.filter(UserDB.id == user_id)
     query = query.join(UserInGroupDB, UserInGroupDB.user_id == UserDB.id)
     query = query.join(GroupDB, UserInGroupDB.group_id == GroupDB.id)
     result = []
