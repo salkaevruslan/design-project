@@ -14,7 +14,7 @@ class TaskDB(Base):
     status = Column(Enum(TaskStatus), default=TaskStatus.ACTIVE)
     creation_datetime = Column(DateTime, default=datetime.datetime.utcnow)
     name = Column(String)
-    description = Column(String)
+    description = Column(String, nullable=True)
     priority = Column(Enum(TaskPriority), default=TaskPriority.MEDIUM)
     start_time = Column(DateTime, nullable=True)
 

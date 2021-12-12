@@ -41,7 +41,7 @@ def create_user_task(db, current_user: User, request: UserTaskCreationRequest):
         status=new_db_task.status,
         creation_datetime=new_db_task.creation_datetime,
         name=new_db_task.name,
-        description=new_db_task.name,
+        description=new_db_task.description,
         priority=new_db_task.priority,
         start_time=new_db_task.start_time
     )
@@ -57,7 +57,7 @@ def create_group_task_suggestion(db, current_user: User, request: GroupTaskCreat
         status=new_db_task.status,
         creation_datetime=new_db_task.creation_datetime,
         name=new_db_task.name,
-        description=new_db_task.name,
+        description=new_db_task.description,
         priority=new_db_task.priority,
         start_time=new_db_task.start_time
     )
@@ -72,7 +72,7 @@ def create_group_task(db, current_user: User, request: GroupTaskCreationRequest)
         type=new_db_task.type,
         creation_datetime=new_db_task.creation_datetime,
         name=new_db_task.name,
-        description=new_db_task.name,
+        description=new_db_task.description,
         priority=new_db_task.priority,
         start_time=new_db_task.start_time
     )
@@ -89,7 +89,7 @@ def get_personal_tasks(db, current_user: User):
                 status=task.status,
                 creation_datetime=task.creation_datetime,
                 name=task.name,
-                description=task.name,
+                description=task.description,
                 priority=task.priority,
                 start_time=task.start_time
             )
@@ -109,7 +109,7 @@ def get_group_tasks(db, current_user: User, group_id: int):
                 status=task.status,
                 creation_datetime=task.creation_datetime,
                 name=task.name,
-                description=task.name,
+                description=task.description,
                 priority=task.priority,
                 start_time=task.start_time
             )
@@ -172,7 +172,7 @@ def get_my_task_suggestions_to_group(db, current_user: User, group_id: int):
                 status=task.status,
                 creation_datetime=task.creation_datetime,
                 name=task.name,
-                description=task.name,
+                description=task.description,
                 priority=task.priority,
                 start_time=task.start_time
             )
@@ -195,7 +195,7 @@ def get_all_task_suggestions_to_group(db, current_user: User, group_id: int):
                     status=task.status,
                     creation_datetime=task.creation_datetime,
                     name=task.name,
-                    description=task.name,
+                    description=task.description,
                     priority=task.priority,
                     start_time=task.start_time
                 )

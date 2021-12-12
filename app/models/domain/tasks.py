@@ -12,6 +12,6 @@ class Task(BaseModel):
     status: TaskStatus
     creation_datetime: datetime.datetime
     name: str
-    description: str
+    description: Optional[str]
     priority: TaskPriority
     start_time: Optional[datetime.datetime]
