@@ -16,7 +16,7 @@ class TaskStatus(enum.Enum):
 class TaskType(enum.Enum):
     UNDEFINED = "UNDEFINED"
     BUSINESS = "BUSINESS"
-    DONE = "MEETING"
+    MEETING = "MEETING"
     NOTE = "NOTE"
     SUGGESTED = "OTHER"
 
