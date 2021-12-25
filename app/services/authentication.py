@@ -2,13 +2,11 @@ from datetime import timedelta, datetime
 from typing import Optional
 
 import jwt
-from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config.config import get_settings
-from app.db.db import get_database
 import app.db.repository.users as users_repository
 from app.exceptions import user_exceptions
 from app.services.models.users import User
@@ -44,25 +42,6 @@ async def generate_access_token(data: dict, expires_delta: Optional[timedelta] =
     data_to_encode.update({"exp": expire})
     access_token = jwt.encode(data_to_encode, key=SECRET_KEY, algorithm=ALGORITHM)
     return access_token
-
-
-async def get_current_user(db: Session = Depends(get_database), token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except Exception:
-        raise credentials_exception
-    user = users_repository.get_user_by_name_db(db, username)
-    if user is None:
-        raise credentials_exception
-    return User(id=user.id, username=user.username, email=user.email)
 
 
 def create_user(db,

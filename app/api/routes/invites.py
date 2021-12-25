@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 import app.services.invites as invites_service
+from app.api.routes.authentication import get_current_user
 from app.db.db import get_database
 from app.services.models.users import User
 from app.api.models.groups import GroupAndUserRequest
-from app.services.authentication import get_current_user
 
 router = APIRouter()
 
