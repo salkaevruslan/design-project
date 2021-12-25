@@ -13,14 +13,14 @@ router = APIRouter()
 @router.post("/change-admin")
 async def change_group_admin(request: GroupAndUserRequest, current_user: User = Depends(get_current_user),
                              db: Session = Depends(get_database)):
-    admin_service.change_group_admin(db, current_user, request)
+    admin_service.change_group_admin(db, current_user, request.group_id, request.user_name)
     return f"{request.user_name} is now admin of this group"
 
 
 @router.delete("/kick")
 async def kick_user_from_group(request: GroupAndUserRequest, current_user: User = Depends(get_current_user),
                                db: Session = Depends(get_database)):
-    admin_service.kick_user_from_group(db, current_user, request)
+    admin_service.kick_user_from_group(db, current_user, request.group_id, request.user_name)
     return f"{request.user_name} is kicked from group"
 
 

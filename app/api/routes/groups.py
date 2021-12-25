@@ -18,7 +18,7 @@ async def my_groups(current_user: User = Depends(get_current_user), db: Session 
 @router.post("/create", status_code=status.HTTP_201_CREATED)
 async def create_group(request: GroupCreationRequest, current_user: User = Depends(get_current_user),
                        db: Session = Depends(get_database)):
-    return groups_service.create_group(db, current_user, request)
+    return groups_service.create_group(db, current_user, request.name)
 
 
 @router.get("/members")

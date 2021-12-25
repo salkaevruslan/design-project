@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("/group/invite", status_code=status.HTTP_201_CREATED)
 async def invite_user_to_group(request: GroupAndUserRequest, current_user: User = Depends(get_current_user),
                                db: Session = Depends(get_database)):
-    return invites_service.invite_user_to_group(db, current_user, request)
+    return invites_service.invite_user_to_group(db, current_user, request.group_id, request.user_name)
 
 
 @router.delete("/group/cancel")
