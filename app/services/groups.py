@@ -1,6 +1,6 @@
-from fastapi import HTTPException, status
 import app.db.repository.groups as groups_repository
 import app.db.repository.users as users_repository
+from app.exceptions import group_exceptions
 from app.services.models.groups import Group
 from app.services.models.users import User
 from app.models.enums.groups import GroupRole
@@ -19,20 +19,14 @@ def create_group(db, user: User, group_name: str):
 def get_group(db, group_id: int):
     group = groups_repository.get_group_by_id_db(db, group_id)
     if not group:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Group not found"
-        )
+        raise group_exceptions.GroupNotFoundException()
     return group
 
 
 def get_group_as_member(db, current_user: User, group_id: int):
     group = get_group(db, group_id)
     if not groups_repository.get_user_in_group_db(db, current_user.id, group_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are not a member of this group"
-        )
+        raise group_exceptions.GroupMembershipException(is_you=True, is_member=False)
     return group
 
 
@@ -75,8 +69,5 @@ def leave_from_group(db, current_user: User, group_id: int):
     get_group_as_member(db, current_user, group_id)
     admin_in_group = groups_repository.get_admin_in_group_db(db, group_id)
     if admin_in_group.user_id == current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You need to make another member admin, before leaving this group"
-        )
+        raise group_exceptions.GroupAdminLeaveException()
     groups_repository.delete_user_in_group_db(db, current_user.id, group_id)

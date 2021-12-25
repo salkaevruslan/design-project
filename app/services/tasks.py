@@ -1,9 +1,8 @@
 import datetime
 
-from fastapi import HTTPException, status
-
 import app.db.repository.groups as groups_repository
 import app.db.repository.tasks as tasks_repository
+from app.exceptions import task_exceptions
 from app.services.models.tasks import Task
 from app.services.models.users import User
 from app.models.enums.tasks import TaskOwnerType, TaskStatus, TaskPriority, TaskType
@@ -14,10 +13,7 @@ from app.services.groups_admin import get_group_as_admin
 def get_task(db, task_id: int):
     task = tasks_repository.get_task_by_id_db(db, task_id)
     if not task:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Task not found"
-        )
+        raise task_exceptions.TaskNotFoundException(is_suggestion=False)
     return task
 
 
@@ -28,10 +24,7 @@ def get_task_owner_type(db, task_id: int):
         return TaskOwnerType.GROUP
     if tasks_repository.get_group_task_suggestion_db(db, task_id):
         return TaskOwnerType.GROUP_SUGGESTED
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Task owner type not found"
-    )
+    raise task_exceptions.TaskOwnerTypeNotFoundException()
 
 
 def create_user_task(db, current_user: User,
@@ -174,16 +167,10 @@ def get_all_tasks(db, current_user: User,
 def delete_user_task(db, current_user: User, task_id: int):
     task = get_task(db, task_id)
     if get_task_owner_type(db, task_id) != TaskOwnerType.PERSONAL:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not personal"
-        )
+        raise task_exceptions.TaskTypeException("personal")
     user_task_db = tasks_repository.get_user_task_db(db, task_id)
     if not user_task_db or user_task_db.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not assigned to you"
-        )
+        raise task_exceptions.TaskNotAssignedToYouException()
     tasks_repository.delete_user_task_db(db, task_id)
     db.delete(task)
     db.commit()
@@ -192,10 +179,7 @@ def delete_user_task(db, current_user: User, task_id: int):
 def delete_group_task(db, current_user: User, task_id: int):
     task = get_task(db, task_id)
     if get_task_owner_type(db, task_id) != TaskOwnerType.GROUP:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not a group task"
-        )
+        raise task_exceptions.TaskTypeException("group")
     group_task_db = tasks_repository.get_group_task_db(db, task_id)
     get_group_as_admin(db, current_user, group_task_db.group_id)
     tasks_repository.delete_group_task_db(db, task_id)
@@ -206,10 +190,7 @@ def delete_group_task(db, current_user: User, task_id: int):
 def delete_suggested_task(db, current_user: User, task_id: int):
     task = get_task(db, task_id)
     if get_task_owner_type(db, task_id) != TaskOwnerType.GROUP_SUGGESTED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not a suggested task"
-        )
+        raise task_exceptions.TaskTypeException("suggested")
     suggested_task_db = tasks_repository.get_group_task_suggestion_db(db, task_id)
     if suggested_task_db.user_id != current_user.id:
         get_group_as_admin(db, current_user, suggested_task_db.group_id)
@@ -278,10 +259,7 @@ def process_suggested_task(db, current_user: User, task_id: int, is_accept: bool
     task = get_task(db, task_id)
     group_task_suggestion_db = tasks_repository.get_group_task_suggestion_db(db, task_id)
     if not group_task_suggestion_db:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Task suggestion not found"
-        )
+        raise task_exceptions.TaskNotFoundException(is_suggestion=True)
     get_group_as_admin(db, current_user, group_task_suggestion_db.group_id)
     if is_accept:
         task.status = TaskStatus.ACTIVE
@@ -304,21 +282,12 @@ def update_user_task(db, current_user: User,
                      start_time: datetime.datetime):
     get_task(db, task_id)
     if get_task_owner_type(db, task_id) != TaskOwnerType.PERSONAL:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not personal"
-        )
+        raise task_exceptions.TaskTypeException("personal")
     user_task_db = tasks_repository.get_user_task_db(db, task_id)
     if not user_task_db or user_task_db.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not assigned to you"
-        )
-    if status == TaskStatus.SUGGESTED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Can't change task status to {TaskStatus.SUGGESTED}"
-        )
+        raise task_exceptions.TaskNotAssignedToYouException()
+    if task_status == TaskStatus.SUGGESTED:
+        raise task_exceptions.TaskTypeException("suggested")
     tasks_repository.apply_task_update_db(db, task_id, task_status, task_type, description, priority, start_time)
 
 
@@ -331,20 +300,14 @@ def update_group_task(db, current_user: User,
                       start_time: datetime.datetime):
     get_task(db, task_id)
     if get_task_owner_type(db, task_id) != TaskOwnerType.GROUP:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not a group task"
-        )
+        raise task_exceptions.TaskTypeException("group")
     group_task_db = tasks_repository.get_group_task_db(db, task_id)
     if group_task_db.user_id == current_user.id:
         get_group_as_member(db, current_user, group_task_db.group_id)
     else:
         get_group_as_admin(db, current_user, group_task_db.group_id)
-    if status == TaskStatus.SUGGESTED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Can't change task status to {TaskStatus.SUGGESTED}"
-        )
+    if task_status == TaskStatus.SUGGESTED:
+        raise task_exceptions.TaskStatusChangeException("suggested")
     tasks_repository.apply_task_update_db(db, task_id, task_status, task_type, description, priority, start_time)
 
 
@@ -357,18 +320,12 @@ def update_suggested_task(db, current_user: User,
                           start_time: datetime.datetime):
     get_task(db, task_id)
     if get_task_owner_type(db, task_id) != TaskOwnerType.GROUP_SUGGESTED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This task is not a suggested task"
-        )
+        raise task_exceptions.TaskTypeException("suggested")
     group_task_db = tasks_repository.get_group_task_suggestion_db(db, task_id)
     if group_task_db.user_id == current_user.id:
         get_group_as_member(db, current_user, group_task_db.group_id)
     else:
         get_group_as_admin(db, current_user, group_task_db.group_id)
-    if status != TaskStatus.SUGGESTED:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can change task status for suggested task"
-        )
+    if task_status != TaskStatus.SUGGESTED:
+        raise task_exceptions.TaskStatusChangeException(f"{task_status}")
     tasks_repository.apply_task_update_db(db, task_id, task_status, task_type, description, priority, start_time)

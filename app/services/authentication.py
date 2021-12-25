@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.config.config import get_settings
 from app.db.db import get_database
 import app.db.repository.users as users_repository
+from app.exceptions import user_exceptions
 from app.services.models.users import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -70,14 +71,8 @@ def create_user(db,
                 password: str):
     password_hash = get_password_hash(password)
     if users_repository.get_user_by_name_db(db, username) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User with this name already exists"
-        )
+        raise user_exceptions.UserAlreadyExistsException(is_name=False)
     if users_repository.get_user_by_email_db(db, username) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User with this email already exists"
-        )
+        raise user_exceptions.UserAlreadyExistsException(is_name=False)
     new_db_user = users_repository.create_user_db(db, email, username, password_hash)
     return User(id=new_db_user.id, username=new_db_user.username, email=new_db_user.email)
