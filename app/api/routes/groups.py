@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.db.db import get_database
-from app.models.domain.users import User
-from app.models.schemas.groups import GroupCreationRequest
+from app.services.models.users import User
+from app.api.models.groups import GroupCreationRequest
 from app.services.authentication import get_current_user
 import app.services.groups as groups_service
 

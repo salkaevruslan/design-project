@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 from app.config.config import get_settings
 from app.db.db import get_database
 import app.db.repository.users as users_repository
-from app.models.domain.users import User
-from app.models.schemas.users import UserCreationRequest
+from app.services.models.users import User
+from app.api.models.users import UserCreationRequest
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")

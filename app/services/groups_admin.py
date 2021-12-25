@@ -2,9 +2,9 @@ from fastapi import HTTPException, status
 
 import app.db.repository.groups as groups_repository
 import app.db.repository.users as users_repository
-from app.models.domain.users import User
+from app.services.models.users import User
 from app.models.enums.groups import GroupRole
-from app.models.schemas.groups import GroupAndUserRequest
+from app.api.models.groups import GroupAndUserRequest
 from app.services.groups import get_group
 
 

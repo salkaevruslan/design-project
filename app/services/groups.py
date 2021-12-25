@@ -1,10 +1,10 @@
 from fastapi import HTTPException, status
 import app.db.repository.groups as groups_repository
 import app.db.repository.users as users_repository
-from app.models.domain.groups import Group
-from app.models.domain.users import User
+from app.services.models.groups import Group
+from app.services.models.users import User
 from app.models.enums.groups import GroupRole
-from app.models.schemas.groups import GroupCreationRequest
+from app.api.models.groups import GroupCreationRequest
 
 
 def create_group(db, user: User, request: GroupCreationRequest):

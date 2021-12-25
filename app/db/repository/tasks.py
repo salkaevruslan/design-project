@@ -1,6 +1,6 @@
 from app.db.models.tasks import TaskDB, UserTaskDB, GroupTaskDB, GroupTaskSuggestionDB
 from app.models.enums.tasks import TaskStatus
-from app.models.schemas.tasks import UserTaskCreationRequest, TaskFilterRequest, TaskUpdateRequest
+from app.api.models.tasks import UserTaskCreationRequest, TaskFilterRequest, TaskUpdateRequest
 
 
 def create_task_db(db, request: UserTaskCreationRequest, status: TaskStatus = TaskStatus.ACTIVE):

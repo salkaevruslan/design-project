@@ -3,11 +3,11 @@ from fastapi import HTTPException, status
 import app.db.repository.groups as groups_repository
 import app.db.repository.invites as invites_repository
 from app.db.repository.users import get_user_by_name_db
-from app.models.domain.groups import Group
-from app.models.domain.invite import Invite
-from app.models.domain.users import User
+from app.services.models.groups import Group
+from app.services.models.invite import Invite
+from app.services.models.users import User
 from app.models.enums.invite import InviteStatus
-from app.models.schemas.groups import GroupAndUserRequest
+from app.api.models.groups import GroupAndUserRequest
 from app.services.groups_admin import get_group_as_admin
 
 

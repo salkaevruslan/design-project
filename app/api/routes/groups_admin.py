@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.db import get_database
-from app.models.domain.users import User
-from app.models.schemas.groups import GroupAndUserRequest
+from app.services.models.users import User
+from app.api.models.groups import GroupAndUserRequest
 from app.services.authentication import get_current_user
 import app.services.groups_admin as admin_service
 

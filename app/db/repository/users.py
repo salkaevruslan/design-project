@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.db.models.users import UserDB
-from app.models.schemas.users import UserCreationRequest
+from app.api.models.users import UserCreationRequest
 
 
 def create_user_db(db: Session, request: UserCreationRequest, password_hash):

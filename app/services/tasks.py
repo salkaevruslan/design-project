@@ -2,10 +2,10 @@ from fastapi import HTTPException, status
 
 import app.db.repository.groups as groups_repository
 import app.db.repository.tasks as tasks_repository
-from app.models.domain.tasks import Task
-from app.models.domain.users import User
+from app.services.models.tasks import Task
+from app.services.models.users import User
 from app.models.enums.tasks import TaskOwnerType, TaskStatus
-from app.models.schemas.tasks import UserTaskCreationRequest, GroupTaskCreationRequest, TaskFilterRequest, \
+from app.api.models.tasks import UserTaskCreationRequest, GroupTaskCreationRequest, TaskFilterRequest, \
     TaskUpdateRequest
 from app.services.groups import get_group_as_member
 from app.services.groups_admin import get_group_as_admin

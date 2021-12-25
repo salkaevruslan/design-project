@@ -2,7 +2,7 @@ import datetime
 
 from pydantic import BaseModel
 
-from app.models.domain.users import User
+from app.services.models.users import User
 
 
 class Group(BaseModel):

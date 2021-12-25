@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.db.db import get_database
-from app.models.domain.users import User
-from app.models.schemas.users import UserCreationRequest
+from app.services.models.users import User
+from app.api.models.users import UserCreationRequest
 from app.services.authentication import get_current_user
 import app.services.authentication as auth_service
 
