@@ -5,3 +5,4 @@ passlib~=1.7.4
 pyjwt~=2.3.0
 uvicorn
 python-multipart
+python-dotenv
