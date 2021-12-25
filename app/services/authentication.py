@@ -7,13 +7,12 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from app.config.config import SECRET_KEY, ALGORITHM
 from app.db.db import get_database
 import app.db.repository.users as users_repository
 from app.models.domain.users import User
 from app.models.schemas.users import UserCreationRequest
 
-SECRET_KEY = 'tmptoken'  # TODO
-ALGORITHM = 'HS256'
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 crypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
