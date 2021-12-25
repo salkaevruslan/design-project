@@ -1,12 +1,14 @@
 from sqlalchemy.orm import Session
 
 from app.db.models.users import UserDB
-from app.api.models.users import UserCreationRequest
 
 
-def create_user_db(db: Session, request: UserCreationRequest, password_hash):
-    new_db_user = UserDB(username=request.username,
-                         email=request.email,
+def create_user_db(db: Session,
+                   email: str,
+                   username: str,
+                   password_hash):
+    new_db_user = UserDB(username=username,
+                         email=email,
                          password_hash=password_hash)
     db.add(new_db_user)
     db.commit()

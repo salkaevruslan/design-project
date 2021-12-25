@@ -4,11 +4,10 @@ import app.db.repository.users as users_repository
 from app.services.models.groups import Group
 from app.services.models.users import User
 from app.models.enums.groups import GroupRole
-from app.api.models.groups import GroupCreationRequest
 
 
-def create_group(db, user: User, request: GroupCreationRequest):
-    new_db_group = groups_repository.create_group_db(db, request.name)
+def create_group(db, user: User, group_name: str):
+    new_db_group = groups_repository.create_group_db(db, group_name)
     groups_repository.create_user_in_group_db(db, user.id, new_db_group.id, GroupRole.ADMIN)
     return Group(id=new_db_group.id,
                  name=new_db_group.name,

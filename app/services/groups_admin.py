@@ -4,7 +4,6 @@ import app.db.repository.groups as groups_repository
 import app.db.repository.users as users_repository
 from app.services.models.users import User
 from app.models.enums.groups import GroupRole
-from app.api.models.groups import GroupAndUserRequest
 from app.services.groups import get_group
 
 
@@ -19,9 +18,9 @@ def get_group_as_admin(db, current_user: User, group_id: int):
     return group
 
 
-def change_group_admin(db, current_user: User, request: GroupAndUserRequest):
-    get_group_as_admin(db, current_user, request.group_id)
-    new_admin_user = users_repository.get_user_by_name_db(db, request.user_name)
+def change_group_admin(db, current_user: User, group_id: int, new_admin_name: str):
+    get_group_as_admin(db, current_user, group_id)
+    new_admin_user = users_repository.get_user_by_name_db(db, new_admin_name)
     if not new_admin_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -32,8 +31,8 @@ def change_group_admin(db, current_user: User, request: GroupAndUserRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You are already admin of this group"
         )
-    new_admin_in_group = groups_repository.get_user_in_group_db(db, new_admin_user.id, request.group_id)
-    current_user_in_group = groups_repository.get_user_in_group_db(db, current_user.id, request.group_id)
+    new_admin_in_group = groups_repository.get_user_in_group_db(db, new_admin_user.id, group_id)
+    current_user_in_group = groups_repository.get_user_in_group_db(db, current_user.id, group_id)
     if not new_admin_in_group:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -46,15 +45,15 @@ def change_group_admin(db, current_user: User, request: GroupAndUserRequest):
     db.refresh(new_admin_in_group)
 
 
-def kick_user_from_group(db, current_user: User, request: GroupAndUserRequest):
-    group = get_group_as_admin(db, current_user, request.group_id)
-    user = users_repository.get_user_by_name_db(db, request.user_name)
+def kick_user_from_group(db, current_user: User, group_id: int, user_name: str):
+    group = get_group_as_admin(db, current_user, group_id)
+    user = users_repository.get_user_by_name_db(db, user_name)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User not found"
         )
-    if not groups_repository.get_user_in_group_db(db, user.id, request.group_id):
+    if not groups_repository.get_user_in_group_db(db, user.id, group_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is not a member of this group"

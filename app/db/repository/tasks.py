@@ -1,15 +1,22 @@
+import datetime
+
 from app.db.models.tasks import TaskDB, UserTaskDB, GroupTaskDB, GroupTaskSuggestionDB
-from app.models.enums.tasks import TaskStatus
-from app.api.models.tasks import UserTaskCreationRequest, TaskFilterRequest, TaskUpdateRequest
+from app.models.enums.tasks import TaskStatus, TaskType, TaskPriority
 
 
-def create_task_db(db, request: UserTaskCreationRequest, status: TaskStatus = TaskStatus.ACTIVE):
-    new_db_task = TaskDB(type=request.type,
+def create_task_db(db,
+                   task_type: TaskType,
+                   name: str,
+                   description: str,
+                   priority: TaskPriority,
+                   start_time: datetime.datetime,
+                   status: TaskStatus = TaskStatus.ACTIVE):
+    new_db_task = TaskDB(type=task_type,
                          status=status,
-                         name=request.name,
-                         description=request.description,
-                         priority=request.priority,
-                         start_time=request.start_time)
+                         name=name,
+                         description=description,
+                         priority=priority,
+                         start_time=start_time)
     db.add(new_db_task)
     db.commit()
     db.refresh(new_db_task)
@@ -76,45 +83,61 @@ def delete_group_task_db(db, task_id: int):
         db.commit()
 
 
-def get_personal_tasks_db(db, user_id: int, request: TaskFilterRequest):
+def get_personal_tasks_db(db, user_id: int,
+                          period_start: datetime.datetime,
+                          period_end: datetime.datetime,
+                          task_type: TaskType,
+                          priority: TaskPriority):
     query = db.query(UserTaskDB, TaskDB)
     query = query.filter(UserTaskDB.user_id == user_id)
     query = query.join(TaskDB, UserTaskDB.task_id == TaskDB.id)
-    query = apply_tasks_filters(query, request)
+    query = apply_tasks_filters(query, period_start, period_end, task_type, priority)
     result = []
     for user_task, task in query.all():
         result.append(task)
     return result
 
 
-def get_group_tasks_db(db, group_id: int, request: TaskFilterRequest):
+def get_group_tasks_db(db, group_id: int,
+                       period_start: datetime.datetime,
+                       period_end: datetime.datetime,
+                       task_type: TaskType,
+                       priority: TaskPriority):
     query = db.query(GroupTaskDB, TaskDB)
     query = query.filter(GroupTaskDB.group_id == group_id)
     query = query.join(TaskDB, GroupTaskDB.task_id == TaskDB.id)
-    query = apply_tasks_filters(query, request)
+    query = apply_tasks_filters(query, period_start, period_end, task_type, priority)
     result = []
     for group_task, task in query.all():
         result.append(task)
     return result
 
 
-def get_user_suggestions_to_group_db(db, user_id: int, group_id: int, request: TaskFilterRequest):
+def get_user_suggestions_to_group_db(db, user_id: int, group_id: int,
+                                     period_start: datetime.datetime,
+                                     period_end: datetime.datetime,
+                                     task_type: TaskType,
+                                     priority: TaskPriority):
     query = db.query(GroupTaskSuggestionDB, TaskDB)
     query = query.filter(GroupTaskSuggestionDB.group_id == group_id)
     query = query.filter(GroupTaskSuggestionDB.user_id == user_id)
     query = query.join(TaskDB, GroupTaskSuggestionDB.task_id == TaskDB.id)
-    query = apply_tasks_filters(query, request)
+    query = apply_tasks_filters(query, period_start, period_end, task_type, priority)
     result = []
     for group_task_suggestion, task in query.all():
         result.append(task)
     return result
 
 
-def get_suggestions_to_group_db(db, group_id: int, request: TaskFilterRequest):
+def get_suggestions_to_group_db(db, group_id: int,
+                                period_start: datetime.datetime,
+                                period_end: datetime.datetime,
+                                task_type: TaskType,
+                                priority: TaskPriority):
     query = db.query(GroupTaskSuggestionDB, TaskDB)
     query = query.filter(GroupTaskSuggestionDB.group_id == group_id)
     query = query.join(TaskDB, GroupTaskSuggestionDB.task_id == TaskDB.id)
-    query = apply_tasks_filters(query, request)
+    query = apply_tasks_filters(query, period_start, period_end, task_type, priority)
     result = []
     for group_task_suggestion, task in query.all():
         result.append({
@@ -124,29 +147,39 @@ def get_suggestions_to_group_db(db, group_id: int, request: TaskFilterRequest):
     return result
 
 
-def apply_tasks_filters(query, request: TaskFilterRequest):
-    if request.type is not None:
-        query = query.filter(TaskDB.type == request.type)
-    if request.priority is not None:
-        query = query.filter(TaskDB.priority == request.priority)
-    if request.period_start is not None:
-        query = query.filter(TaskDB.start_time >= request.period_start)
-    if request.period_end is not None:
-        query = query.filter(TaskDB.start_time <= request.period_end)
+def apply_tasks_filters(query,
+                        period_start: datetime.datetime,
+                        period_end: datetime.datetime,
+                        task_type: TaskType,
+                        priority: TaskPriority):
+    if task_type is not None:
+        query = query.filter(TaskDB.type == task_type)
+    if priority is not None:
+        query = query.filter(TaskDB.priority == priority)
+    if period_start is not None:
+        query = query.filter(TaskDB.start_time >= period_start)
+    if period_end is not None:
+        query = query.filter(TaskDB.start_time <= period_end)
     return query
 
 
-def apply_task_update_db(db, request: TaskUpdateRequest):
-    task = get_task_by_id_db(db, request.task_id)
-    if request.status is not None:
-        task.status = request.status
-    if request.type is not None:
-        task.type = request.type
-    if request.priority is not None:
-        task.priority = request.priority
-    if request.description is not None:
-        task.description = request.description
-    if request.start_time is not None:
-        task.start_time = request.start_time
+def apply_task_update_db(db,
+                         task_id: int,
+                         status: TaskStatus,
+                         task_type: TaskType,
+                         description: str,
+                         priority: TaskPriority,
+                         start_time: datetime.datetime):
+    task = get_task_by_id_db(db, task_id)
+    if status is not None:
+        task.status = status
+    if task_type is not None:
+        task.type = task_type
+    if priority is not None:
+        task.priority = priority
+    if description is not None:
+        task.description = description
+    if start_time is not None:
+        task.start_time = start_time
     db.commit()
     db.refresh(task)
